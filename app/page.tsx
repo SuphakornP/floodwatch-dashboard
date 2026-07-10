@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Activity,
   Bell,
   BellRing,
   Check,
@@ -121,6 +120,25 @@ const severityLabel: Record<Severity, string> = {
   watch: "Watch",
 };
 
+const districts = [
+  { name: "Mae Sot", risk: "critical", reading: "6.42 m", trend: "Rising", action: "Evacuating" },
+  { name: "Mae Ramat", risk: "critical", reading: "5.91 m", trend: "Rising", action: "Response active" },
+  { name: "Phop Phra", risk: "warning", reading: "4.78 m", trend: "Rising", action: "Preparing shelters" },
+  { name: "Umphang", risk: "warning", reading: "3.64 m", trend: "Rising", action: "Road teams staged" },
+  { name: "Ban Tak", risk: "watch", reading: "4.11 m", trend: "Stable", action: "Monitoring" },
+  { name: "Tha Song Yang", risk: "watch", reading: "4.02 m", trend: "Stable", action: "Monitoring" },
+  { name: "Mueang Tak", risk: "normal", reading: "3.36 m", trend: "Stable", action: "Routine watch" },
+  { name: "Sam Ngao", risk: "normal", reading: "69%", trend: "Reservoir", action: "Routine watch" },
+  { name: "Wang Chao", risk: "normal", reading: "2.88 m", trend: "Stable", action: "Routine watch" },
+] as const;
+
+const districtRiskLabel = {
+  critical: "Critical",
+  warning: "Warning",
+  watch: "Watch",
+  normal: "Normal",
+};
+
 export default function Home() {
   const [severity, setSeverity] = useState<"all" | Severity>("all");
   const [query, setQuery] = useState("");
@@ -163,7 +181,7 @@ export default function Home() {
           <a className="active" href="#overview">Overview</a>
           <a href="#alerts">Warnings <span className="nav-count">5</span></a>
           <a href="#districts">Districts</a>
-          <a href="#telemetry">Telemetry</a>
+          <a href="#telemetry">River levels</a>
         </nav>
 
         <div className="topbar-actions">
@@ -183,7 +201,7 @@ export default function Home() {
         <div className="page-heading">
           <div>
             <p className="eyebrow">TAK PROVINCE</p>
-            <h1>Flood operations overview</h1>
+            <h1>Tak flood operations</h1>
             <p className="heading-meta">
               <span>Friday, 10 July 2026</span>
               <span className="meta-separator" />
@@ -289,7 +307,7 @@ export default function Home() {
                     <span>{selected.id}</span>
                   </div>
                   <strong>{selected.title}</strong>
-                  <p>{selected.district} · {selected.level} <b>{selected.delta}</b></p>
+                  <p>{selected.district} - {selected.level} <b>{selected.delta}</b></p>
                   <button type="button" onClick={() => setDrawerAlert(selected)}>
                     View details <ChevronRight size={15} />
                   </button>
@@ -301,7 +319,7 @@ export default function Home() {
                 <span><i className="legend-dot warning" /> Warning</span>
                 <span><i className="legend-dot watch" /> Watch</span>
               </div>
-              <a className="map-credit" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap</a>
+              <a className="map-credit" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">(c) OpenStreetMap</a>
             </div>
           </div>
 
@@ -370,8 +388,8 @@ export default function Home() {
             <span><small>PEOPLE EXPOSED</small><strong>2,460</strong><em>5 districts</em></span>
           </div>
           <div className="metric">
-            <span className="metric-icon teal"><Activity size={19} /></span>
-            <span><small>GAUGES ONLINE</small><strong>18 / 20</strong><em className="normal">90% reporting</em></span>
+            <span className="metric-icon teal"><Map size={19} /></span>
+            <span><small>DISTRICTS MONITORED</small><strong>9 / 9</strong><em className="normal">Full coverage</em></span>
           </div>
           <div className="metric">
             <span className="metric-icon blue"><Route size={19} /></span>
@@ -383,8 +401,8 @@ export default function Home() {
           <article className="telemetry-panel" id="telemetry">
             <div className="section-heading">
               <div>
-                <span className="panel-kicker">STATION MS-04 · MAE SOT</span>
-                <h2>River level trend</h2>
+                <span className="panel-kicker">STATION MS-04 - MAE SOT</span>
+                <h2>Moei River level</h2>
               </div>
               <div className="station-reading">
                 <span>Current</span>
@@ -419,36 +437,31 @@ export default function Home() {
           <article className="district-panel" id="districts">
             <div className="section-heading">
               <div>
-                <span className="panel-kicker">FIELD STATUS</span>
-                <h2>District readiness</h2>
+                <span className="panel-kicker">PROVINCE COVERAGE</span>
+                <h2>All district status</h2>
               </div>
-              <button className="text-button" type="button">View all <ChevronRight size={15} /></button>
+              <span className="coverage-count">9 of 9 monitored</span>
             </div>
 
             <div className="district-table" role="table" aria-label="District readiness">
               <div className="district-row table-head" role="row">
-                <span>District</span><span>River</span><span>Action</span>
+                <span>District</span><span>Reading</span><span>Risk</span><span aria-hidden="true" />
               </div>
-              <div className="district-row" role="row">
-                <span><i className="status-mark critical" /><b>Mae Sot</b><small>Evacuating</small></span>
-                <span><b>6.42 m</b><small className="rising">Rising</small></span>
-                <button type="button" aria-label="Open Mae Sot details"><ChevronRight size={17} /></button>
-              </div>
-              <div className="district-row" role="row">
-                <span><i className="status-mark critical" /><b>Mae Ramat</b><small>Response active</small></span>
-                <span><b>5.91 m</b><small className="rising">Rising</small></span>
-                <button type="button" aria-label="Open Mae Ramat details"><ChevronRight size={17} /></button>
-              </div>
-              <div className="district-row" role="row">
-                <span><i className="status-mark warning" /><b>Phop Phra</b><small>Preparing</small></span>
-                <span><b>4.78 m</b><small className="rising">Rising</small></span>
-                <button type="button" aria-label="Open Phop Phra details"><ChevronRight size={17} /></button>
-              </div>
-              <div className="district-row" role="row">
-                <span><i className="status-mark watch" /><b>Ban Tak</b><small>Monitoring</small></span>
-                <span><b>4.11 m</b><small className="stable">Stable</small></span>
-                <button type="button" aria-label="Open Ban Tak details"><ChevronRight size={17} /></button>
-              </div>
+              {districts.map((district) => (
+                <div className="district-row" role="row" key={district.name}>
+                  <span>
+                    <i className={`status-mark ${district.risk}`} />
+                    <b>{district.name}</b>
+                    <small>{district.action}</small>
+                  </span>
+                  <span>
+                    <b>{district.reading}</b>
+                    <small className={district.trend === "Rising" ? "rising" : "stable"}>{district.trend}</small>
+                  </span>
+                  <span><i className={`risk-badge ${district.risk}`}>{districtRiskLabel[district.risk]}</i></span>
+                  <button type="button" aria-label={`Open ${district.name} details`}><ChevronRight size={17} /></button>
+                </div>
+              ))}
             </div>
           </article>
         </section>
@@ -469,7 +482,7 @@ export default function Home() {
             <div className="drawer-header">
               <div>
                 <span className={`severity-pill ${drawerAlert.severity}`}>{severityLabel[drawerAlert.severity]}</span>
-                <small>{drawerAlert.id} · {drawerAlert.time}</small>
+                <small>{drawerAlert.id} - {drawerAlert.time}</small>
               </div>
               <button className="icon-button" type="button" onClick={() => setDrawerAlert(null)} aria-label="Close incident details" title="Close">
                 <X size={20} />

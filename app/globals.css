@@ -1084,7 +1084,7 @@ a {
 .threshold-label i { border-top: 1px dashed var(--red); height: 1px; width: 20px; }
 
 .telemetry-chart {
-  height: 245px;
+  height: 330px;
   margin-left: 34px;
   padding-bottom: 24px;
   position: relative;
@@ -1196,6 +1196,16 @@ a {
   padding: 0;
 }
 
+.coverage-count {
+  background: #e6f3f0;
+  border-radius: 4px;
+  color: var(--teal-dark);
+  font-size: 9px;
+  font-weight: 750;
+  padding: 6px 8px;
+  white-space: nowrap;
+}
+
 .district-table {
   margin-top: 17px;
 }
@@ -1204,8 +1214,8 @@ a {
   align-items: center;
   border-bottom: 1px solid var(--soft-line);
   display: grid;
-  grid-template-columns: minmax(145px, 1.4fr) minmax(74px, 0.7fr) 28px;
-  min-height: 58px;
+  grid-template-columns: minmax(125px, 1.35fr) minmax(68px, 0.65fr) minmax(64px, 0.55fr) 28px;
+  min-height: 47px;
 }
 
 .district-row.table-head {
@@ -1244,6 +1254,11 @@ a {
   flex-direction: column;
 }
 
+.district-row > span:nth-child(3) {
+  align-items: flex-start;
+  display: flex;
+}
+
 .district-row > span:nth-child(2) small {
   grid-column: auto;
 }
@@ -1262,6 +1277,20 @@ a {
 .status-mark.critical { background: var(--red); }
 .status-mark.warning { background: var(--amber); }
 .status-mark.watch { background: var(--blue); }
+.status-mark.normal { background: var(--green); }
+
+.risk-badge {
+  border-radius: 3px;
+  font-size: 8px;
+  font-style: normal;
+  font-weight: 750;
+  padding: 4px 5px;
+}
+
+.risk-badge.critical { background: var(--red-soft); color: var(--red-dark); }
+.risk-badge.warning { background: var(--amber-soft); color: #925307; }
+.risk-badge.watch { background: #e9f3f9; color: #2f6d94; }
+.risk-badge.normal { background: #e9f4ef; color: #277158; }
 
 .district-row > button {
   align-items: center;
@@ -1682,7 +1711,16 @@ a {
   }
 
   .district-row {
-    grid-template-columns: minmax(125px, 1.4fr) minmax(66px, 0.7fr) 26px;
+    grid-template-columns: minmax(104px, 1.3fr) minmax(55px, 0.65fr) minmax(56px, 0.6fr) 22px;
+  }
+
+  .district-row b {
+    font-size: 10px;
+  }
+
+  .district-row small,
+  .risk-badge {
+    font-size: 7px;
   }
 
   .incident-drawer {
