@@ -125,20 +125,16 @@ type LiveAlert = {
 };
 
 const districtDefinitions = [
-  { name: "Mueang Tak", apiName: "Mueang Tak District" },
-  { name: "Ban Tak", apiName: "Ban Tak District" },
-  { name: "Sam Ngao", apiName: "Sam Ngao District" },
-  { name: "Mae Ramat", apiName: "Mae Ramat District" },
-  { name: "Tha Song Yang", apiName: "Tha Song Yang District" },
   { name: "Mae Sot", apiName: "Mae Sot District" },
-  { name: "Phop Phra", apiName: "Phop Phra District" },
   { name: "Umphang", apiName: "Umphang District" },
-  { name: "Wang Chao", apiName: "Wang Chao District" },
+  { name: "Tha Song Yang", apiName: "Tha Song Yang District" },
+  { name: "Mae Ramat", apiName: "Mae Ramat District" },
+  { name: "Phop Phra", apiName: "Phop Phra District" },
 ] as const;
 
 function mapPosition(latitude: number, longitude: number) {
-  const x = Math.min(90, Math.max(10, ((longitude - 97.75) / (99.6 - 97.75)) * 100));
-  const y = Math.min(90, Math.max(10, (1 - (latitude - 14.85) / (18 - 14.85)) * 100));
+  const x = Math.min(90, Math.max(10, ((longitude - 97.75) / (99.2 - 97.75)) * 100));
+  const y = Math.min(90, Math.max(10, (1 - (latitude - 15.75) / (17.85 - 15.75)) * 100));
   return { x, y };
 }
 
@@ -268,8 +264,8 @@ export default function Home() {
       <div className="page-content" id="overview">
         <div className="page-heading">
           <div>
-            <p className="eyebrow">TAK PROVINCE - OFFICIAL GOVERNMENT FEEDS</p>
-            <h1>Tak flood monitoring</h1>
+            <p className="eyebrow">FIVE WESTERN TAK DISTRICTS - OFFICIAL GOVERNMENT FEEDS</p>
+            <h1>Western Tak flood monitoring</h1>
             <p className="heading-meta">
               <span>Generated {data ? new Date(data.generatedAt).toLocaleString() : "when feeds respond"}</span>
               <span className="meta-separator" />
@@ -332,7 +328,7 @@ export default function Home() {
 
             <div className="map-canvas">
               <div className="map-tiles" aria-hidden="true">
-                {["197/115", "198/115", "199/115", "197/116", "198/116", "199/116"].map((tile) => (
+                {["197/114", "198/114", "199/114", "197/115", "198/115", "199/115"].map((tile) => (
                   <img key={tile} src={`https://tile.openstreetmap.org/8/${tile}.png`} alt="" />
                 ))}
               </div>
@@ -429,7 +425,7 @@ export default function Home() {
             </div>
 
             <div className="weather-summary">
-              <div className="weather-summary-heading"><span>TMD observations</span><small>{data?.weather?.stations.length ?? 0} Tak stations</small></div>
+              <div className="weather-summary-heading"><span>TMD observations</span><small>{data?.weather?.stations.length ?? 0} target-area stations</small></div>
               {(data?.weather?.stations ?? []).slice(0, 3).map((station) => (
                 <div className="weather-row" key={station.code}>
                   <span><b>{station.name}</b><small>{formatFeedTime(station.observedAt)}</small></span>
@@ -445,7 +441,7 @@ export default function Home() {
         <section className="metric-strip" aria-label="Official flood monitoring summary">
           <div className="metric"><span className="metric-icon red"><ShieldAlert size={19} /></span><span><small>WATER LEVEL FLAGS</small><strong>{data?.water?.flaggedCount ?? "-"}</strong><em>ThaiWater level 4-5</em></span></div>
           <div className="metric"><span className="metric-icon gold"><CloudRain size={19} /></span><span><small>MAXIMUM RAIN 24H</small><strong>{maximumRainStation ? `${maximumRainStation.rainfall24hMm.toFixed(1)} mm` : "-"}</strong><em>{maximumRainStation?.name ?? "No feed"}</em></span></div>
-          <div className="metric"><span className="metric-icon teal"><Gauge size={19} /></span><span><small>TAK WATER GAUGES</small><strong>{data?.water?.stations.length ?? "-"}</strong><em>{formatFeedTime(data?.water?.observedAt)}</em></span></div>
+          <div className="metric"><span className="metric-icon teal"><Gauge size={19} /></span><span><small>FIVE-DISTRICT GAUGES</small><strong>{data?.water?.stations.length ?? "-"}</strong><em>{formatFeedTime(data?.water?.observedAt)}</em></span></div>
           <div className="metric"><span className="metric-icon blue"><Building2 size={19} /></span><span><small>DDPM SHELTER RECORDS</small><strong>{data?.ddpm?.shelterCount ?? "-"}</strong><em>Dataset: Aug 2024</em></span></div>
         </section>
 
@@ -458,10 +454,10 @@ export default function Home() {
                 <strong>{source.shortName}</strong>
                 <small>
                   {source.mode}
-                  {source.id === "tmd" && data?.weather ? ` - ${data.weather.stations.length} Tak stations` : ""}
-                  {source.id === "thaiwater" && data?.water ? ` - ${data.water.stations.length} Tak gauges` : ""}
-                  {source.id === "roads" && data?.roads ? ` - ${data.roads.recordCount} Tak archive records` : ""}
-                  {source.id === "ddpm" && data?.ddpm ? ` - ${data.ddpm.shelterCount} Tak shelter records` : ""}
+                  {source.id === "tmd" && data?.weather ? ` - ${data.weather.stations.length} target-area stations` : ""}
+                  {source.id === "thaiwater" && data?.water ? ` - ${data.water.stations.length} target-area gauges` : ""}
+                  {source.id === "roads" && data?.roads ? ` - ${data.roads.recordCount} target-area archive records` : ""}
+                  {source.id === "ddpm" && data?.ddpm ? ` - ${data.ddpm.shelterCount} target-area shelter records` : ""}
                 </small>
               </span>
               <ExternalLink size={14} />
@@ -472,7 +468,7 @@ export default function Home() {
         <section className="lower-grid">
           <article className="telemetry-panel" id="telemetry">
             <div className="section-heading">
-              <div><span className="panel-kicker">LATEST THAIWATER RESPONSE</span><h2>Tak water gauges</h2></div>
+              <div><span className="panel-kicker">LATEST THAIWATER RESPONSE</span><h2>Five-district water gauges</h2></div>
               <span className="coverage-count">{data?.water?.stations.length ?? 0} stations</span>
             </div>
 
@@ -492,11 +488,11 @@ export default function Home() {
 
           <article className="district-panel" id="districts">
             <div className="section-heading">
-              <div><span className="panel-kicker">ALL TAK DISTRICTS</span><h2>Feed coverage</h2></div>
-              <span className="coverage-count">9 districts checked</span>
+              <div><span className="panel-kicker">FIVE TARGET DISTRICTS</span><h2>Feed coverage</h2></div>
+              <span className="coverage-count">5 districts checked</span>
             </div>
 
-            <div className="district-table" role="table" aria-label="Official feed coverage by Tak district">
+            <div className="district-table" role="table" aria-label="Official feed coverage for the five target districts">
               <div className="district-row table-head" role="row"><span>District</span><span>Rain 24h</span><span>Water</span><span aria-hidden="true" /></div>
               {districtRows.map((district) => (
                 <div className="district-row" role="row" key={district.name}>

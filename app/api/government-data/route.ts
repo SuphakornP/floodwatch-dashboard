@@ -31,6 +31,18 @@ const SOURCES = {
   },
 } as const;
 
+const TARGET_DISTRICTS_EN = new Set([
+  "Mae Sot District",
+  "Umphang District",
+  "Tha Song Yang District",
+  "Mae Ramat District",
+  "Phop Phra District",
+]);
+
+const TARGET_DISTRICTS_TH = new Set(["แม่สอด", "อุ้มผาง", "ท่าสองยาง", "แม่ระมาด", "พบพระ"]);
+
+const TARGET_TMD_STATIONS = new Set(["MAE SOT", "UMPHANG"]);
+
 async function fetchWithTimeout(url: string, timeoutMs = 15_000) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
@@ -75,7 +87,7 @@ async function getWeather() {
   const stationNodes = asArray(parsed?.Weather3Hours?.Stations?.Station ?? parsed?.Weather3Hours?.Station);
 
   const stations = stationNodes
-    .filter((station: any) => station?.Province === "ตาก")
+    .filter((station: any) => station?.Province === "ตาก" && TARGET_TMD_STATIONS.has(String(station?.StationNameEnglish ?? "")))
     .map((station: any) => ({
       code: String(xmlValue(station.WmoStationNumber) ?? ""),
       name: String(station.StationNameEnglish ?? station.StationNameThai ?? "TMD station"),
@@ -105,7 +117,7 @@ async function getWater() {
   const [waterJson, rainJson] = await Promise.all([waterResponse.json(), rainResponse.json()]);
 
   const waterStations = asArray<any>((waterJson as any)?.waterlevel_data?.data)
-    .filter((item) => item?.geocode?.province_code === "63")
+    .filter((item) => item?.geocode?.province_code === "63" && TARGET_DISTRICTS_EN.has(String(item?.geocode?.amphoe_name?.en ?? "")))
     .map((item) => ({
       id: String(item.id),
       code: String(item?.station?.tele_station_oldcode ?? item.id),
@@ -126,7 +138,7 @@ async function getWater() {
     .sort((a, b) => b.situationLevel - a.situationLevel || a.bankDistanceM - b.bankDistanceM);
 
   const rainfallStations = asArray<any>((rainJson as any)?.data)
-    .filter((item) => item?.geocode?.province_code === "63")
+    .filter((item) => item?.geocode?.province_code === "63" && TARGET_DISTRICTS_EN.has(String(item?.geocode?.amphoe_name?.en ?? "")))
     .map((item) => ({
       id: String(item.id),
       code: String(item?.station?.tele_station_oldcode ?? item.id),
@@ -158,7 +170,11 @@ async function getRoadArchive() {
     ? json
     : ((Object.values(json).find((value) => Array.isArray(value)) as any[]) ?? []);
   const takRecords = records
-    .filter((record) => String(record.PROVINCE ?? "").trim() === "ตาก")
+    .filter((record) => {
+      if (String(record.PROVINCE ?? "").trim() !== "ตาก") return false;
+      const locationText = `${record.TITLE ?? ""} ${record.DESCRIPTION ?? ""}`;
+      return Array.from(TARGET_DISTRICTS_TH).some((district) => locationText.includes(district));
+    })
     .map((record) => ({
       id: String(record.ID ?? record.FLOOD_ID ?? ""),
       title: String(record.TITLE ?? "Road flood record"),
@@ -197,7 +213,9 @@ async function getDdpmPreparedness() {
     relax_quotes: true,
     relax_column_count: true,
   }) as string[][];
-  const takRows = rows.slice(1).filter((row) => String(row[2] ?? "").trim() === "ตาก");
+  const takRows = rows.slice(1).filter(
+    (row) => String(row[2] ?? "").trim() === "ตาก" && TARGET_DISTRICTS_TH.has(String(row[3] ?? "").trim()),
+  );
   const districtCounts = new Map<string, number>();
   let totalCapacity = 0;
 
