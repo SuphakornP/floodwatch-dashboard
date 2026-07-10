@@ -14,8 +14,9 @@ import {
 } from "lucide-react";
 import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
+import { thaiTranslations } from "../thaiTranslations";
 
-type Language = "en" | "my";
+type Language = "en" | "my" | "th";
 
 type DamageForm = {
   assessorName: string;
@@ -173,11 +174,11 @@ const my: Record<string, string> = {
 };
 
 const districts = [
-  { en: "Mae Sot", my: "မဲဆောက်" },
-  { en: "Umphang", my: "အုမ်းဖန်" },
-  { en: "Tha Song Yang", my: "ထာဆောင်ယန်း" },
-  { en: "Mae Ramat", my: "မယ်ရမတ်" },
-  { en: "Phop Phra", my: "ဖုပ်ဖရာ" },
+  { en: "Mae Sot", my: "မဲဆောက်", th: "แม่สอด" },
+  { en: "Umphang", my: "အုမ်းဖန်", th: "อุ้มผาง" },
+  { en: "Tha Song Yang", my: "ထာဆောင်ယန်း", th: "ท่าสองยาง" },
+  { en: "Mae Ramat", my: "မယ်ရမတ်", th: "แม่ระมาด" },
+  { en: "Phop Phra", my: "ဖုပ်ဖရာ", th: "พบพระ" },
 ];
 
 const categories = [
@@ -202,11 +203,11 @@ export default function DamageAssessmentPage() {
   const [locationMessage, setLocationMessage] = useState("");
   const [error, setError] = useState("");
   const [reference, setReference] = useState("");
-  const tr = (value: string) => language === "my" ? my[value] ?? value : value;
+  const tr = (value: string) => language === "my" ? my[value] ?? value : language === "th" ? thaiTranslations[value] ?? value : value;
 
   useEffect(() => {
     const saved = window.localStorage.getItem("floodwatch-language");
-    if (saved === "en" || saved === "my") setLanguage(saved);
+    if (saved === "en" || saved === "my" || saved === "th") setLanguage(saved);
   }, []);
 
   useEffect(() => {
@@ -272,7 +273,7 @@ export default function DamageAssessmentPage() {
       <header className="topbar help-topbar">
         <a className="brand" href="/" aria-label={`Help Without Frontiers - ${tr("Back to dashboard")}`}><img className="brand-logo" src="/hwf-site-logo.png" alt="Help Without Frontiers" /><span>FLOODWATCH</span></a>
         <a className="help-back-link" href="/"><ArrowLeft size={16} /> {tr("Back to dashboard")}</a>
-        <div className="language-switch" role="group" aria-label={tr("Language")}><Languages size={15} /><button type="button" aria-pressed={language === "en"} className={language === "en" ? "active" : ""} onClick={() => setLanguage("en")}>EN</button><button type="button" aria-pressed={language === "my"} className={language === "my" ? "active" : ""} onClick={() => setLanguage("my")}>မြန်မာ</button></div>
+        <div className="language-switch" role="group" aria-label={tr("Language")}><Languages size={15} /><button type="button" aria-pressed={language === "en"} className={language === "en" ? "active" : ""} onClick={() => setLanguage("en")}>EN</button><button type="button" aria-pressed={language === "my"} className={language === "my" ? "active" : ""} onClick={() => setLanguage("my")}>မြန်မာ</button><button type="button" aria-pressed={language === "th"} className={language === "th" ? "active" : ""} onClick={() => setLanguage("th")}>ไทย</button></div>
       </header>
 
       <div className="help-content">
@@ -287,7 +288,7 @@ export default function DamageAssessmentPage() {
               <form className="help-form" onSubmit={submit}>
                 <fieldset className="form-section"><legend><span>01</span><b>{tr("Assessor details")}</b><small>* {tr("Required fields are marked")}</small></legend><div className="form-grid two-column"><label><span>{tr("Assessor name")} *</span><input required maxLength={120} autoComplete="name" value={form.assessorName} onChange={(event) => update("assessorName", event.target.value)} /></label><label><span>{tr("Phone number")} *</span><input required maxLength={32} inputMode="tel" autoComplete="tel" placeholder="09x xxx xxxx" value={form.phone} onChange={(event) => update("phone", event.target.value)} /></label><label><span>{tr("Organization or team")}</span><input maxLength={160} value={form.organization} onChange={(event) => update("organization", event.target.value)} /></label><label><span>{tr("Observation date and time")} *</span><input required type="datetime-local" value={form.observedAt} onChange={(event) => update("observedAt", event.target.value)} /></label></div></fieldset>
 
-                <fieldset className="form-section"><legend><span>02</span><b>{tr("Location")}</b><small>{tr("Only the five target districts can be submitted")}</small></legend><div className="form-grid two-column"><label><span>{tr("District")} *</span><select required value={form.district} onChange={(event) => update("district", event.target.value)}><option value="">{tr("Select district")}</option>{districts.map((district) => <option key={district.en} value={district.en}>{language === "my" ? district.my : district.en}</option>)}</select></label><label><span>{tr("Village or ward")} *</span><input required maxLength={120} value={form.village} onChange={(event) => update("village", event.target.value)} /></label><label className="full-width"><span>{tr("Address, landmark, or affected route")} *</span><textarea required maxLength={500} rows={3} value={form.locationDetails} onChange={(event) => update("locationDetails", event.target.value)} /></label></div><div className="location-capture"><button type="button" onClick={getLocation} disabled={locating}><Crosshair size={16} /> {tr(locating ? "Getting location" : "Use my location")}</button>{form.latitude && form.longitude && <span><MapPin size={14} /> {form.latitude}, {form.longitude}</span>}{locationMessage && <small>{locationMessage}</small>}</div></fieldset>
+                <fieldset className="form-section"><legend><span>02</span><b>{tr("Location")}</b><small>{tr("Only the five target districts can be submitted")}</small></legend><div className="form-grid two-column"><label><span>{tr("District")} *</span><select required value={form.district} onChange={(event) => update("district", event.target.value)}><option value="">{tr("Select district")}</option>{districts.map((district) => <option key={district.en} value={district.en}>{language === "my" ? district.my : language === "th" ? district.th : district.en}</option>)}</select></label><label><span>{tr("Village or ward")} *</span><input required maxLength={120} value={form.village} onChange={(event) => update("village", event.target.value)} /></label><label className="full-width"><span>{tr("Address, landmark, or affected route")} *</span><textarea required maxLength={500} rows={3} value={form.locationDetails} onChange={(event) => update("locationDetails", event.target.value)} /></label></div><div className="location-capture"><button type="button" onClick={getLocation} disabled={locating}><Crosshair size={16} /> {tr(locating ? "Getting location" : "Use my location")}</button>{form.latitude && form.longitude && <span><MapPin size={14} /> {form.latitude}, {form.longitude}</span>}{locationMessage && <small>{locationMessage}</small>}</div></fieldset>
 
                 <fieldset className="form-section"><legend><span>03</span><b>{tr("Severity and access")}</b><small>{tr("Use the best current field estimate")}</small></legend><div className="damage-severity-options">{([ ["minor", "Minor", "Usable with small repairs"], ["moderate", "Moderate", "Partly usable; repairs required"], ["major", "Major", "Unsafe or services seriously disrupted"], ["destroyed", "Destroyed / unusable", "Total loss or cannot be occupied"] ] as const).map(([value, title, description]) => <label className={form.severity === value ? `selected ${value}` : ""} key={value}><input type="radio" name="severity" value={value} checked={form.severity === value} onChange={() => update("severity", value)} /><span><b>{tr(title)}</b><small>{tr(description)}</small></span></label>)}</div><div className="form-grid two-column damage-access-grid"><label><span>{tr("Access status")} *</span><select value={form.accessStatus} onChange={(event) => update("accessStatus", event.target.value as DamageForm["accessStatus"])}>{[["safe","Safe access"],["limited","Limited access"],["unsafe","Unsafe access"],["inaccessible","Inaccessible"]].map(([value,label]) => <option value={value} key={value}>{tr(label)}</option>)}</select></label><label><span>{tr("Estimated water depth (cm)")}</span><input type="number" min="0" max="2000" value={form.floodDepthCm} onChange={(event) => update("floodDepthCm", event.target.value)} /></label></div><label className="check-row"><input type="checkbox" checked={form.waterPresent} onChange={(event) => update("waterPresent", event.target.checked)} /><span>{tr("Floodwater is still present")}</span></label></fieldset>
 

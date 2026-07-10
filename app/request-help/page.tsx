@@ -16,8 +16,9 @@ import {
   Users,
 } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
+import { thaiTranslations } from "../thaiTranslations";
 
-type Language = "en" | "my";
+type Language = "en" | "my" | "th";
 
 type HelpForm = {
   fullName: string;
@@ -138,11 +139,11 @@ const my: Record<string, string> = {
 };
 
 const districts = [
-  { en: "Mae Sot", my: "မဲဆောက်" },
-  { en: "Umphang", my: "အုမ်းဖန်" },
-  { en: "Tha Song Yang", my: "ထာဆောင်ယန်း" },
-  { en: "Mae Ramat", my: "မယ်ရမတ်" },
-  { en: "Phop Phra", my: "ဖုပ်ဖရာ" },
+  { en: "Mae Sot", my: "မဲဆောက်", th: "แม่สอด" },
+  { en: "Umphang", my: "အုမ်းဖန်", th: "อุ้มผาง" },
+  { en: "Tha Song Yang", my: "ထာဆောင်ယန်း", th: "ท่าสองยาง" },
+  { en: "Mae Ramat", my: "မယ်ရမတ်", th: "แม่ระมาด" },
+  { en: "Phop Phra", my: "ဖုပ်ဖရာ", th: "พบพระ" },
 ];
 
 const needOptions = [
@@ -164,13 +165,13 @@ export default function RequestHelpPage() {
   const [locationMessage, setLocationMessage] = useState("");
   const [error, setError] = useState("");
   const [reference, setReference] = useState("");
-  const tr = (value: string) => language === "my" ? my[value] ?? value : value;
+  const tr = (value: string) => language === "my" ? my[value] ?? value : language === "th" ? thaiTranslations[value] ?? value : value;
 
   useEffect(() => {
     const saved = window.localStorage.getItem("floodwatch-language");
-    if (saved === "en" || saved === "my") {
+    if (saved === "en" || saved === "my" || saved === "th") {
       setLanguage(saved);
-      setForm((current) => ({ ...current, preferredLanguage: saved === "my" ? "Burmese" : "English" }));
+      setForm((current) => ({ ...current, preferredLanguage: saved === "my" ? "Burmese" : saved === "th" ? "Thai" : "English" }));
     }
   }, []);
 
@@ -238,7 +239,7 @@ export default function RequestHelpPage() {
   };
 
   const reset = () => {
-    setForm({ ...initialForm, preferredLanguage: language === "my" ? "Burmese" : "English" });
+    setForm({ ...initialForm, preferredLanguage: language === "my" ? "Burmese" : language === "th" ? "Thai" : "English" });
     setReference("");
     setError("");
     setLocationMessage("");
@@ -256,6 +257,7 @@ export default function RequestHelpPage() {
           <Languages size={15} />
           <button type="button" aria-pressed={language === "en"} className={language === "en" ? "active" : ""} onClick={() => setLanguage("en")}>EN</button>
           <button type="button" aria-pressed={language === "my"} className={language === "my" ? "active" : ""} onClick={() => setLanguage("my")}>မြန်မာ</button>
+          <button type="button" aria-pressed={language === "th"} className={language === "th" ? "active" : ""} onClick={() => setLanguage("th")}>ไทย</button>
         </div>
       </header>
 
@@ -303,7 +305,7 @@ export default function RequestHelpPage() {
                 <fieldset className="form-section">
                   <legend><span>02</span><b>{tr("Location")}</b><small>{tr("Only the five target districts can be submitted")}</small></legend>
                   <div className="form-grid two-column">
-                    <label><span>{tr("District")} *</span><select required value={form.district} onChange={(event) => update("district", event.target.value)}><option value="">{tr("Select district")}</option>{districts.map((district) => <option key={district.en} value={district.en}>{language === "my" ? district.my : district.en}</option>)}</select></label>
+                    <label><span>{tr("District")} *</span><select required value={form.district} onChange={(event) => update("district", event.target.value)}><option value="">{tr("Select district")}</option>{districts.map((district) => <option key={district.en} value={district.en}>{language === "my" ? district.my : language === "th" ? district.th : district.en}</option>)}</select></label>
                     <label><span>{tr("Village or ward")} *</span><input required maxLength={120} value={form.village} onChange={(event) => update("village", event.target.value)} /></label>
                     <label className="full-width"><span>{tr("Address, landmark, or access route")} *</span><textarea required maxLength={500} rows={3} value={form.locationDetails} onChange={(event) => update("locationDetails", event.target.value)} /></label>
                   </div>
@@ -354,7 +356,7 @@ export default function RequestHelpPage() {
               <aside className="help-sidebar">
                 <section><HeartHandshake size={21} /><h2>{tr("Before submitting")}</h2><ul><li>{tr("Move to higher ground when it is safe to do so.")}</li><li>{tr("Do not cross moving floodwater or closed roads.")}</li><li>{tr("Keep your phone charged and answer unknown calls after submitting.")}</li></ul></section>
                 <section><ShieldCheck size={21} /><h2>{tr("Information handling")}</h2><p>{tr("Contact and location details are stored privately for response coordination. Do not include identity documents, bank details, or passwords.")}</p></section>
-                <section className="area-summary"><Users size={21} /><h2>{tr("FIVE WESTERN TAK DISTRICTS")}</h2><p>{districts.map((district) => language === "my" ? district.my : district.en).join(" • ")}</p></section>
+                <section className="area-summary"><Users size={21} /><h2>{tr("FIVE WESTERN TAK DISTRICTS")}</h2><p>{districts.map((district) => language === "my" ? district.my : language === "th" ? district.th : district.en).join(" • ")}</p></section>
               </aside>
             </div>
           </>

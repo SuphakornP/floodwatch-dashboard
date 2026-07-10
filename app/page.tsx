@@ -30,9 +30,10 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import InteractiveMap, { type BaseMap, type FloodMapPoint } from "./InteractiveMap";
+import { thaiTranslations } from "./thaiTranslations";
 
 type Severity = "critical" | "warning";
-type Language = "en" | "my";
+type Language = "en" | "my" | "th";
 
 type WaterStation = {
   id: string;
@@ -138,11 +139,11 @@ type LiveAlert = {
 };
 
 const districtDefinitions = [
-  { name: "Mae Sot", nameMy: "မဲဆောက်", apiName: "Mae Sot District" },
-  { name: "Umphang", nameMy: "အုမ်းဖန်", apiName: "Umphang District" },
-  { name: "Tha Song Yang", nameMy: "ထာဆောင်ယန်း", apiName: "Tha Song Yang District" },
-  { name: "Mae Ramat", nameMy: "မယ်ရမတ်", apiName: "Mae Ramat District" },
-  { name: "Phop Phra", nameMy: "ဖုပ်ဖရာ", apiName: "Phop Phra District" },
+  { name: "Mae Sot", nameMy: "မဲဆောက်", nameTh: "แม่สอด", apiName: "Mae Sot District" },
+  { name: "Umphang", nameMy: "အုမ်းဖန်", nameTh: "อุ้มผาง", apiName: "Umphang District" },
+  { name: "Tha Song Yang", nameMy: "ထာဆောင်ယန်း", nameTh: "ท่าสองยาง", apiName: "Tha Song Yang District" },
+  { name: "Mae Ramat", nameMy: "မယ်ရမတ်", nameTh: "แม่ระมาด", apiName: "Mae Ramat District" },
+  { name: "Phop Phra", nameMy: "ဖုပ်ဖရာ", nameTh: "พบพระ", apiName: "Phop Phra District" },
 ] as const;
 
 const myTranslations: Record<string, string> = {
@@ -260,13 +261,14 @@ const myTranslations: Record<string, string> = {
 };
 
 function formatFeedTime(value?: string | null, language: Language = "en") {
-  if (!value) return language === "my" ? myTranslations["Not reported"] : "Not reported";
+  if (!value) return language === "my" ? myTranslations["Not reported"] : language === "th" ? thaiTranslations["Not reported"] : "Not reported";
   if (/^\d{4}-\d{2}-\d{2}/.test(value)) return value.replace("T", " ").slice(0, 16);
   return value;
 }
 
 function levelLabel(level: number, language: Language = "en") {
   if (language === "my") return level > 0 ? `အဆင့် ${level}` : "အဆင့်မရှိ";
+  if (language === "th") return level > 0 ? `ระดับ ${level}` : "ไม่มีระดับ";
   if (level >= 5) return "Level 5";
   if (level >= 4) return "Level 4";
   if (level >= 3) return "Level 3";
@@ -277,12 +279,16 @@ function levelLabel(level: number, language: Language = "en") {
 function displayDistrictName(apiName: string, language: Language) {
   const district = districtDefinitions.find((item) => item.apiName === apiName);
   if (!district) return apiName.replace(" District", "");
-  return language === "my" ? district.nameMy : district.name;
+  return language === "my" ? district.nameMy : language === "th" ? district.nameTh : district.name;
 }
 
 function formatPopulation(value: number | null | undefined, language: Language) {
   if (value == null) return "-";
-  return new Intl.NumberFormat(language === "my" ? "my-MM" : "en-US").format(value);
+  return new Intl.NumberFormat(language === "my" ? "my-MM" : language === "th" ? "th-TH" : "en-US").format(value);
+}
+
+function localized(language: Language, english: string, burmese: string, thai: string) {
+  return language === "my" ? burmese : language === "th" ? thai : english;
 }
 
 function RiverLevelChart({ station, language, tr }: { station: WaterStation; language: Language; tr: (text: string) => string }) {
@@ -335,7 +341,7 @@ export default function Home() {
   const [selectedGaugeCode, setSelectedGaugeCode] = useState("");
   const [bannerVisible, setBannerVisible] = useState(true);
   const [language, setLanguage] = useState<Language>("en");
-  const tr = useCallback((text: string) => language === "my" ? myTranslations[text] ?? text : text, [language]);
+  const tr = useCallback((text: string) => language === "my" ? myTranslations[text] ?? text : language === "th" ? thaiTranslations[text] ?? text : text, [language]);
 
   const loadGovernmentData = useCallback(async () => {
     setLoading(true);
@@ -358,7 +364,7 @@ export default function Home() {
 
   useEffect(() => {
     const savedLanguage = window.localStorage.getItem("floodwatch-language");
-    if (savedLanguage === "en" || savedLanguage === "my") setLanguage(savedLanguage);
+    if (savedLanguage === "en" || savedLanguage === "my" || savedLanguage === "th") setLanguage(savedLanguage);
   }, []);
 
   useEffect(() => {
@@ -376,13 +382,9 @@ export default function Home() {
           severity: station.situationLevel >= 5 ? "critical" : "warning",
           title: tr(station.situationLevel >= 5 ? "Very high water situation" : "High water situation"),
           district: displayDistrictName(station.district, language),
-          detail: language === "my"
-            ? station.bankDistanceM >= 0
-              ? `ဖော်ပြထားသော ကမ်းပါးအဆင့်အောက် ${station.bankDistanceM.toFixed(2)} မီတာ`
-              : `ဖော်ပြထားသော ကမ်းပါးအဆင့်အထက် ${Math.abs(station.bankDistanceM).toFixed(2)} မီတာ`
-            : station.bankDistanceM >= 0
-              ? `${station.bankDistanceM.toFixed(2)} m below the reported bank level`
-              : `${Math.abs(station.bankDistanceM).toFixed(2)} m above the reported bank level`,
+          detail: station.bankDistanceM >= 0
+            ? localized(language, `${station.bankDistanceM.toFixed(2)} m below the reported bank level`, `ဖော်ပြထားသော ကမ်းပါးအဆင့်အောက် ${station.bankDistanceM.toFixed(2)} မီတာ`, `ต่ำกว่าระดับตลิ่งที่รายงาน ${station.bankDistanceM.toFixed(2)} เมตร`)
+            : localized(language, `${Math.abs(station.bankDistanceM).toFixed(2)} m above the reported bank level`, `ဖော်ပြထားသော ကမ်းပါးအဆင့်အထက် ${Math.abs(station.bankDistanceM).toFixed(2)} မီတာ`, `สูงกว่าระดับตลิ่งที่รายงาน ${Math.abs(station.bankDistanceM).toFixed(2)} เมตร`),
           time: formatFeedTime(station.observedAt, language),
           level: `${station.levelMsl.toFixed(2)} m MSL`,
           delta: `${change >= 0 ? "+" : ""}${change.toFixed(2)} m`,
@@ -440,7 +442,7 @@ export default function Home() {
         longitude: station.longitude,
         label: station.name,
         district: displayDistrictName(station.district, language),
-        value: language === "my" ? `၂၄ နာရီ မိုးရေ ${station.rainfall24hMm} mm` : `${station.rainfall24hMm} mm in 24h`,
+        value: localized(language, `${station.rainfall24hMm} mm in 24h`, `၂၄ နာရီ မိုးရေ ${station.rainfall24hMm} mm`, `ฝน 24 ชม. ${station.rainfall24hMm} มม.`),
         tone: "rainfall",
       }));
     }
@@ -479,6 +481,7 @@ export default function Home() {
             <Languages size={15} />
             <button type="button" aria-pressed={language === "en"} className={language === "en" ? "active" : ""} onClick={() => setLanguage("en")}>EN</button>
             <button type="button" aria-pressed={language === "my"} className={language === "my" ? "active" : ""} onClick={() => setLanguage("my")}>မြန်မာ</button>
+            <button type="button" aria-pressed={language === "th"} className={language === "th" ? "active" : ""} onClick={() => setLanguage("th")}>ไทย</button>
           </div>
           <div className="system-state" aria-label={`${connectedCount}/${sourceCount} ${tr("official sources")}`}>
             <span className={connectedCount === sourceCount ? "live-dot" : "live-dot partial"} />
@@ -498,7 +501,7 @@ export default function Home() {
             <p className="eyebrow">{tr("FIVE WESTERN TAK DISTRICTS - OFFICIAL GOVERNMENT FEEDS")}</p>
             <h1>{tr("Western Tak flood monitoring")}</h1>
             <p className="heading-meta">
-              <span>{tr("Generated")} {data ? new Date(data.generatedAt).toLocaleString(language === "my" ? "my-MM" : "en-GB") : tr("when feeds respond")}</span>
+              <span>{tr("Generated")} {data ? new Date(data.generatedAt).toLocaleString(language === "my" ? "my-MM" : language === "th" ? "th-TH" : "en-GB") : tr("when feeds respond")}</span>
               <span className="meta-separator" />
               <span className="official-badge">{tr("NO DEMO READINGS")}</span>
             </p>
@@ -526,7 +529,7 @@ export default function Home() {
           <section className="critical-banner high-banner" aria-label={tr("Official water level notice")}>
             <div className="critical-icon"><TriangleAlert size={21} /></div>
             <div className="critical-copy">
-              <strong>{language === "my" ? `ThaiWater အခြေအနေအဆင့် ၄ နှင့်အထက် စခန်း ${alerts.length} ခု ရှိသည်` : `${alerts.length} target-area station${alerts.length === 1 ? "" : "s"} returned ThaiWater situation level 4 or higher`}</strong>
+              <strong>{localized(language, `${alerts.length} target-area station${alerts.length === 1 ? "" : "s"} returned ThaiWater situation level 4 or higher`, `ThaiWater အခြေအနေအဆင့် ၄ နှင့်အထက် စခန်း ${alerts.length} ခု ရှိသည်`, `พบสถานีในพื้นที่เป้าหมาย ${alerts.length} แห่งที่มีสถานการณ์ ThaiWater ระดับ 4 ขึ้นไป`)}</strong>
               <span>{tr("This is a feed-based monitoring flag, not an evacuation order. Confirm the latest agency bulletin before field action.")}</span>
             </div>
             <div className="banner-actions">
@@ -548,13 +551,13 @@ export default function Home() {
             <div className="map-toolbar">
               <div className="map-data-layers">
                 <button className={mapLayer === "warnings" ? "active" : ""} type="button" onClick={() => setMapLayer("warnings")}>
-                  <ShieldAlert size={15} /> {language === "my" ? "ရေသတိ" : "Water flags"}
+                  <ShieldAlert size={15} /> {tr("Water flags")}
                 </button>
                 <button className={mapLayer === "rainfall" ? "active" : ""} type="button" onClick={() => setMapLayer("rainfall")}>
-                  <CloudRain size={15} /> {language === "my" ? "မိုးရေ" : "Rainfall"}
+                  <CloudRain size={15} /> {tr("Rainfall")}
                 </button>
                 <button className={mapLayer === "gauges" ? "active" : ""} type="button" onClick={() => setMapLayer("gauges")}>
-                  <Gauge size={15} /> {language === "my" ? "ရေတိုင်း" : "All gauges"}
+                  <Gauge size={15} /> {tr("All gauges")}
                 </button>
               </div>
               <div className="basemap-switch" role="group" aria-label={tr("Map style")}>
@@ -595,7 +598,7 @@ export default function Home() {
               <div className="map-legend">
                 <span><i className="legend-dot critical" /> {levelLabel(5, language)}</span>
                 <span><i className="legend-dot warning" /> {levelLabel(4, language)}</span>
-                <span><i className="legend-dot watch" /> {language === "my" ? "အဆင့် ၁-၃" : "Level 1-3"}</span>
+                <span><i className="legend-dot watch" /> {localized(language, "Level 1-3", "အဆင့် ၁-၃", "ระดับ 1-3")}</span>
               </div>
             </div>
           </div>
@@ -660,13 +663,17 @@ export default function Home() {
               <span>
                 <strong>{source.shortName}</strong>
                 <small>
-                  {language === "my"
+                  {language === "en" ? source.mode : language === "my"
                     ? source.id === "tmd" ? "၃ နာရီတစ်ကြိမ် တိုက်ရိုက်တိုင်းတာချက်"
                       : source.id === "thaiwater" ? "ရေတိုင်းစခန်းနှင့် ၂၄ နာရီ မိုးရေ"
                       : source.id === "roads" ? "လမ်းရေဘေး မှတ်တမ်းဟောင်း (၂၀၂၂)"
                       : source.id === "ddpm" ? "ခိုလှုံရာ ပြင်ဆင်မှုဒေတာ"
                       : "DOPA ၂၀၂၆ ဇွန် မှတ်ပုံတင်လူဦးရေ"
-                    : source.mode}
+                    : source.id === "tmd" ? "ข้อมูลตรวจวัดสดทุก 3 ชั่วโมง"
+                      : source.id === "thaiwater" ? "สถานีระดับน้ำและฝน 24 ชั่วโมง"
+                      : source.id === "roads" ? "ข้อมูลน้ำท่วมถนนย้อนหลัง (2022)"
+                      : source.id === "ddpm" ? "ข้อมูลเตรียมพร้อมศูนย์พักพิง"
+                      : "ประชากรตามทะเบียน DOPA มิ.ย. 2026"}
                   {source.id === "tmd" && data?.weather ? ` - ${data.weather.stations.length} ${tr("target-area stations")}` : ""}
                   {source.id === "thaiwater" && data?.water ? ` - ${data.water.stations.length} ${tr("target-area gauges")}` : ""}
                   {source.id === "roads" && data?.roads ? ` - ${data.roads.recordCount} ${tr("target-area archive records")}` : ""}
@@ -741,7 +748,7 @@ export default function Home() {
                 <div className="live-gauge-row" key={station.id}>
                   <span><b>{station.name}</b><small>{displayDistrictName(station.district, language)} - {formatFeedTime(station.observedAt, language)}</small></span>
                   <span><b>{station.levelMsl.toFixed(2)} m</b><small>MSL</small></span>
-                  <span><b>{station.bankDistanceM.toFixed(2)} m</b><small>{language === "my" ? tr("Reported difference") : station.bankDistanceText || tr("Reported difference")}</small></span>
+                  <span><b>{station.bankDistanceM.toFixed(2)} m</b><small>{language === "en" ? station.bankDistanceText || tr("Reported difference") : tr("Reported difference")}</small></span>
                   <span><i className={`risk-badge ${station.situationLevel >= 5 ? "critical" : station.situationLevel >= 4 ? "warning" : station.situationLevel >= 3 ? "watch" : "normal"}`}>{levelLabel(station.situationLevel, language)}</i></span>
                 </div>
               ))}
@@ -759,10 +766,10 @@ export default function Home() {
               <div className="district-row table-head" role="row"><span>{tr("District")}</span><span>{tr("Rain 24h")}</span><span>{tr("Water")}</span><span aria-hidden="true" /></div>
               {districtRows.map((district) => (
                 <div className="district-row" role="row" key={district.name}>
-                  <span><i className={`status-mark ${district.maximumLevel >= 5 ? "critical" : district.maximumLevel >= 4 ? "warning" : district.gaugeCount ? "normal" : "unavailable"}`} /><b>{language === "my" ? district.nameMy : district.name}</b><small>{language === "my" ? `မိုးရေစခန်း ${district.rainCount} / ရေတိုင်းစခန်း ${district.gaugeCount}` : `${district.rainCount} rain / ${district.gaugeCount} water stations`}</small></span>
+                  <span><i className={`status-mark ${district.maximumLevel >= 5 ? "critical" : district.maximumLevel >= 4 ? "warning" : district.gaugeCount ? "normal" : "unavailable"}`} /><b>{displayDistrictName(district.apiName, language)}</b><small>{localized(language, `${district.rainCount} rain / ${district.gaugeCount} water stations`, `မိုးရေစခန်း ${district.rainCount} / ရေတိုင်းစခန်း ${district.gaugeCount}`, `สถานีฝน ${district.rainCount} / สถานีระดับน้ำ ${district.gaugeCount}`)}</small></span>
                   <span><b>{district.rainCount ? `${district.maximumRain.toFixed(1)} mm` : "-"}</b><small>{tr(district.rainCount ? "Maximum" : "No station")}</small></span>
                   <span><i className={`risk-badge ${district.maximumLevel >= 5 ? "critical" : district.maximumLevel >= 4 ? "warning" : district.maximumLevel >= 3 ? "watch" : district.gaugeCount ? "normal" : "unavailable"}`}>{district.gaugeCount ? levelLabel(district.maximumLevel, language) : tr("No gauge")}</i></span>
-                  <a href={data?.water?.sourceUrl ?? "https://www.thaiwater.net/"} target="_blank" rel="noreferrer" aria-label={language === "my" ? `${district.nameMy} အတွက် ThaiWater ဖွင့်ရန်` : `Open ThaiWater for ${district.name}`}><ExternalLink size={15} /></a>
+                  <a href={data?.water?.sourceUrl ?? "https://www.thaiwater.net/"} target="_blank" rel="noreferrer" aria-label={localized(language, `Open ThaiWater for ${district.name}`, `${district.nameMy} အတွက် ThaiWater ဖွင့်ရန်`, `เปิด ThaiWater สำหรับอำเภอ${district.nameTh}`)}><ExternalLink size={15} /></a>
                 </div>
               ))}
             </div>
@@ -793,11 +800,11 @@ export default function Home() {
             </div>
             <h2 id="incident-title">{drawerAlert.station.name}</h2>
             <p className="drawer-location"><MapPin size={16} /> {drawerAlert.district}, {tr("Tak Province")}</p>
-            <p className="drawer-summary">{language === "my" ? `ThaiWater ဒေတာအရ ${drawerAlert.detail}။ အခြေအနေအဆင့်ကို ရင်းမြစ်ဒေတာမှ ရယူထားပြီး သက်ဆိုင်ရာဌာန၏ နောက်ဆုံးကြေညာချက်နှင့် စစ်ဆေးရမည်။` : `ThaiWater reports ${drawerAlert.detail}. The situation level is supplied by the source feed and should be checked against the latest agency bulletin.`}</p>
+            <p className="drawer-summary">{localized(language, `ThaiWater reports ${drawerAlert.detail}. The situation level is supplied by the source feed and should be checked against the latest agency bulletin.`, `ThaiWater ဒေတာအရ ${drawerAlert.detail}။ အခြေအနေအဆင့်ကို ရင်းမြစ်ဒေတာမှ ရယူထားပြီး သက်ဆိုင်ရာဌာန၏ နောက်ဆုံးကြေညာချက်နှင့် စစ်ဆေးရမည်။`, `ThaiWater รายงานว่า ${drawerAlert.detail} ระดับสถานการณ์มาจากข้อมูลต้นทางและควรตรวจสอบกับประกาศล่าสุดของหน่วยงาน`)}</p>
 
             <div className="drawer-stats">
               <span><small>{tr("Water level")}</small><strong>{drawerAlert.level}</strong><em>{drawerAlert.delta} {tr("from previous")}</em></span>
-              <span><small>{tr("Bank distance")}</small><strong>{drawerAlert.station.bankDistanceM.toFixed(2)} m</strong><em>{language === "my" ? tr("Reported difference") : drawerAlert.station.bankDistanceText || tr("Source value")}</em></span>
+              <span><small>{tr("Bank distance")}</small><strong>{drawerAlert.station.bankDistanceM.toFixed(2)} m</strong><em>{language === "en" ? drawerAlert.station.bankDistanceText || tr("Source value") : tr("Reported difference")}</em></span>
             </div>
 
             <div className="official-detail-list">

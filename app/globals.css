@@ -31,7 +31,7 @@ body {
   margin: 0;
   background: var(--canvas);
   color: var(--ink);
-  font-family: Inter, "Myanmar Text", "Noto Sans Myanmar", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: Inter, "Noto Sans Thai", Tahoma, "Myanmar Text", "Noto Sans Myanmar", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-size: 14px;
   letter-spacing: 0;
 }
@@ -172,8 +172,14 @@ html[lang="my"] body {
   line-height: 1.45;
 }
 
+html[lang="th"] body {
+  line-height: 1.4;
+}
+
 html[lang="my"] .map-toolbar button,
-html[lang="my"] .mobile-nav a {
+html[lang="my"] .mobile-nav a,
+html[lang="th"] .map-toolbar button,
+html[lang="th"] .mobile-nav a {
   line-height: 1.35;
 }
 
