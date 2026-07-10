@@ -303,6 +303,7 @@ function RiverLevelChart({ station, language, tr }: { station: WaterStation; lan
         <path className="river-area" d={`M 92 ${previousY} L 508 ${currentY} L 508 178 L 92 178 Z`} />
         <line className={`river-line ${trendTone}`} x1="92" x2="508" y1={previousY} y2={currentY} />
         <circle className="river-point previous" cx="92" cy={previousY} r="7" />
+        <circle className={`river-point-halo ${trendTone}`} cx="508" cy={currentY} r="14" />
         <circle className={`river-point current ${trendTone}`} cx="508" cy={currentY} r="8" />
         <text className="point-value" x="92" y={Math.max(18, previousY - 13)} textAnchor="middle">{station.previousLevelMsl.toFixed(2)} m</text>
         <text className="point-value" x="508" y={Math.max(18, currentY - 14)} textAnchor="middle">{station.levelMsl.toFixed(2)} m</text>

@@ -632,7 +632,39 @@ html[lang="my"] .mobile-nav a {
 }
 
 .active-flood-marker {
+  animation: active-point-breathe 1.45s ease-in-out infinite;
   filter: drop-shadow(0 0 5px rgba(21, 45, 52, 0.75));
+}
+
+.flood-marker {
+  animation: map-point-breathe 2.8s ease-in-out infinite;
+}
+
+.flood-marker-halo {
+  animation: map-point-halo 2s ease-out infinite;
+  pointer-events: none;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.flood-marker-halo.critical,
+.flood-marker-halo.selected {
+  animation-duration: 1.25s;
+}
+
+@keyframes map-point-breathe {
+  0%, 100% { filter: drop-shadow(0 0 1px rgba(24, 54, 61, 0.2)); opacity: 0.9; }
+  50% { filter: drop-shadow(0 0 4px rgba(24, 54, 61, 0.58)); opacity: 1; }
+}
+
+@keyframes active-point-breathe {
+  0%, 100% { filter: drop-shadow(0 0 3px rgba(21, 45, 52, 0.55)); }
+  50% { filter: drop-shadow(0 0 9px rgba(21, 45, 52, 0.9)); }
+}
+
+@keyframes map-point-halo {
+  0% { opacity: 0.5; transform: scale(0.68); }
+  72%, 100% { opacity: 0; transform: scale(1.22); }
 }
 
 .map-tiles {
@@ -1610,6 +1642,24 @@ html[lang="my"] .mobile-nav a {
 .river-point.current.rising { stroke: var(--red); }
 .river-point.current.falling { stroke: var(--teal); }
 .river-point.current.steady { stroke: #58747b; }
+
+.river-point-halo {
+  animation: river-point-pulse 1.8s ease-out infinite;
+  fill: none;
+  opacity: 0;
+  stroke-width: 3;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.river-point-halo.rising { stroke: var(--red); }
+.river-point-halo.falling { stroke: var(--teal); }
+.river-point-halo.steady { stroke: #58747b; }
+
+@keyframes river-point-pulse {
+  0% { opacity: 0.58; transform: scale(0.58); }
+  75%, 100% { opacity: 0; transform: scale(1.18); }
+}
 
 .river-chart-values {
   border: 1px solid var(--soft-line);
@@ -3260,4 +3310,10 @@ html[lang="my"] .mobile-nav a {
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .map-marker.selected::after { animation: none; opacity: 0.6; }
+  .active-flood-marker,
+  .flood-marker,
+  .flood-marker-halo,
+  .river-point-halo { animation: none; }
+  .flood-marker-halo { opacity: 0.2; }
+  .river-point-halo { opacity: 0.25; }
 }

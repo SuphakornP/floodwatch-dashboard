@@ -139,6 +139,18 @@ export default function InteractiveMap({
     points.forEach((point) => {
       const selected = point.id === selectedPointId;
       const color = pointColors[point.tone];
+      if (selected || point.tone === "critical" || point.tone === "warning") {
+        L.circleMarker([point.latitude, point.longitude], {
+          radius: selected ? 18 : 15,
+          color,
+          weight: 2,
+          fillColor: color,
+          fillOpacity: 0.08,
+          opacity: 0.45,
+          interactive: false,
+          className: `flood-marker-halo ${point.tone}${selected ? " selected" : ""}`,
+        }).addTo(layer);
+      }
       const marker = L.circleMarker([point.latitude, point.longitude], {
         radius: selected ? 11 : 8,
         color: selected ? "#ffffff" : color,
