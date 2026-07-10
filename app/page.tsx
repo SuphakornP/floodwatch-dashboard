@@ -12,6 +12,7 @@ import {
   ExternalLink,
   Gauge,
   Info,
+  Languages,
   Map,
   MapPin,
   RefreshCw,
@@ -28,6 +29,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 type Severity = "critical" | "warning";
+type Language = "en" | "my";
 
 type WaterStation = {
   id: string;
@@ -125,12 +127,101 @@ type LiveAlert = {
 };
 
 const districtDefinitions = [
-  { name: "Mae Sot", apiName: "Mae Sot District" },
-  { name: "Umphang", apiName: "Umphang District" },
-  { name: "Tha Song Yang", apiName: "Tha Song Yang District" },
-  { name: "Mae Ramat", apiName: "Mae Ramat District" },
-  { name: "Phop Phra", apiName: "Phop Phra District" },
+  { name: "Mae Sot", nameMy: "မဲဆောက်", apiName: "Mae Sot District" },
+  { name: "Umphang", nameMy: "အုမ်းဖန်", apiName: "Umphang District" },
+  { name: "Tha Song Yang", nameMy: "ထာဆောင်ယန်း", apiName: "Tha Song Yang District" },
+  { name: "Mae Ramat", nameMy: "မယ်ရမတ်", apiName: "Mae Ramat District" },
+  { name: "Phop Phra", nameMy: "ဖုပ်ဖရာ", apiName: "Phop Phra District" },
 ] as const;
+
+const myTranslations: Record<string, string> = {
+  "Overview": "ခြုံငုံသုံးသပ်ချက်",
+  "Water flags": "ရေအဆင့် သတိပေးချက်",
+  "Districts": "ခရိုင်များ",
+  "Sources": "ဒေတာရင်းမြစ်များ",
+  "official sources": "တရားဝင် ဒေတာရင်းမြစ်",
+  "FIVE WESTERN TAK DISTRICTS - OFFICIAL GOVERNMENT FEEDS": "တာ့ခ်ပြည်နယ် အနောက်ပိုင်း ခရိုင် ၅ ခု - အစိုးရတရားဝင် ဒေတာ",
+  "Western Tak flood monitoring": "တာ့ခ်အနောက်ပိုင်း ရေဘေးစောင့်ကြည့်မှု",
+  "Generated": "ဒေတာရယူချိန်",
+  "when feeds respond": "ဒေတာရရှိသည့်အခါ",
+  "NO DEMO READINGS": "စမ်းသပ်ဒေတာ မပါ",
+  "Refreshing": "ပြန်လည်ရယူနေသည်",
+  "Refresh official data": "တရားဝင်ဒေတာ ပြန်လည်ရယူရန်",
+  "Loading official government feeds": "အစိုးရတရားဝင် ဒေတာများ ရယူနေသည်",
+  "TMD, ThaiWater, DRR, and DDPM are being checked independently.": "TMD၊ ThaiWater၊ DRR နှင့် DDPM တို့ကို သီးခြားစစ်ဆေးနေသည်။",
+  "Official feeds could not be reached": "တရားဝင်ဒေတာရင်းမြစ်များ ချိတ်ဆက်မရပါ",
+  "No cached demonstration values are being shown. Refresh to try again.": "သိမ်းဆည်းထားသော စမ်းသပ်ဒေတာကို မပြပါ။ ပြန်လည်ရယူရန် နှိပ်ပါ။",
+  "This is a feed-based monitoring flag, not an evacuation order. Confirm the latest agency bulletin before field action.": "၎င်းသည် ဒေတာအခြေပြု စောင့်ကြည့်သတိပေးချက်သာဖြစ်ပြီး ရွှေ့ပြောင်းအမိန့် မဟုတ်ပါ။ လုပ်ဆောင်မီ သက်ဆိုင်ရာဌာန၏ နောက်ဆုံးကြေညာချက်ကို အတည်ပြုပါ။",
+  "Open ThaiWater": "ThaiWater ကို ဖွင့်ရန်",
+  "No level 4-5 Tak water stations returned": "အဆင့် ၄-၅ ရေတိုင်းစခန်း မတွေ့ရှိပါ",
+  "This is not an all-clear. Continue checking TMD, ThaiWater, DDPM, and local authority notices.": "၎င်းသည် အန္တရာယ်ကင်းကြောင်း ကြေညာချက် မဟုတ်ပါ။ TMD၊ ThaiWater၊ DDPM နှင့် ဒေသအာဏာပိုင် ကြေညာချက်များကို ဆက်လက်စစ်ဆေးပါ။",
+  "Rainfall": "မိုးရေချိန်",
+  "All gauges": "ရေတိုင်းစခန်းအားလုံး",
+  "No level 4-5 stations": "အဆင့် ၄-၅ စခန်း မတွေ့ပါ",
+  "Based on the latest ThaiWater response.": "ThaiWater ၏ နောက်ဆုံးဒေတာအရ။",
+  "View source details": "ရင်းမြစ်အသေးစိတ် ကြည့်ရန်",
+  "THAIWATER LIVE FEED": "THAIWATER တိုက်ရိုက်ဒေတာ",
+  "High water flags": "ရေအဆင့်မြင့် သတိပေးချက်",
+  "Search station or district": "စခန်း သို့မဟုတ် ခရိုင် ရှာရန်",
+  "All": "အားလုံး",
+  "No official water flags match this filter.": "ဤစစ်ထုတ်မှုနှင့် ကိုက်ညီသော တရားဝင်သတိပေးချက် မရှိပါ။",
+  "TMD observations": "TMD တိုင်းတာချက်များ",
+  "target-area stations": "ပစ်မှတ်ဧရိယာ စခန်းများ",
+  "target-area gauges": "ပစ်မှတ်ဧရိယာ ရေတိုင်းစခန်းများ",
+  "target-area archive records": "ပစ်မှတ်ဧရိယာ မှတ်တမ်းဟောင်းများ",
+  "target-area shelter records": "ပစ်မှတ်ဧရိယာ ခိုလှုံရာမှတ်တမ်းများ",
+  "TMD feed unavailable.": "TMD ဒေတာ မရရှိနိုင်ပါ။",
+  "WATER LEVEL FLAGS": "ရေအဆင့် သတိပေးချက်",
+  "ThaiWater level 4-5": "ThaiWater အဆင့် ၄-၅",
+  "MAXIMUM RAIN 24H": "၂၄ နာရီအတွင်း အများဆုံးမိုးရေ",
+  "No feed": "ဒေတာမရှိ",
+  "FIVE-DISTRICT GAUGES": "ခရိုင် ၅ ခု ရေတိုင်းစခန်းများ",
+  "DDPM SHELTER RECORDS": "DDPM ခိုလှုံရာ မှတ်တမ်းများ",
+  "Dataset: Aug 2024": "ဒေတာစုံ: ၂၀၂၄ ဩဂုတ်",
+  "Official sources": "တရားဝင် ဒေတာရင်းမြစ်များ",
+  "Each feed is checked independently": "ဒေတာရင်းမြစ်တိုင်းကို သီးခြားစစ်ဆေးသည်",
+  "LATEST THAIWATER RESPONSE": "THAIWATER နောက်ဆုံးဒေတာ",
+  "Five-district water gauges": "ခရိုင် ၅ ခု ရေတိုင်းစခန်းများ",
+  "stations": "စခန်းများ",
+  "Station": "စခန်း",
+  "Level": "အဆင့်",
+  "Bank distance": "ကမ်းပါးအကွာအဝေး",
+  "Status": "အခြေအနေ",
+  "Reported difference": "ရင်းမြစ်မှ ဖော်ပြသည့် ကွာဟချက်",
+  "ThaiWater feed unavailable. No substitute values are shown.": "ThaiWater ဒေတာ မရရှိနိုင်ပါ။ အစားထိုးတန်ဖိုး မပြပါ။",
+  "FIVE TARGET DISTRICTS": "ပစ်မှတ်ခရိုင် ၅ ခု",
+  "Feed coverage": "ဒေတာလွှမ်းခြုံမှု",
+  "5 districts checked": "ခရိုင် ၅ ခု စစ်ဆေးပြီး",
+  "District": "ခရိုင်",
+  "Rain 24h": "၂၄ နာရီ မိုးရေ",
+  "Water": "ရေအခြေအနေ",
+  "Maximum": "အများဆုံး",
+  "No station": "စခန်းမရှိ",
+  "No gauge": "ရေတိုင်းစခန်းမရှိ",
+  "Operational use:": "လုပ်ငန်းသုံး သတိပြုရန်:",
+  "Feed values can be delayed, missing, or revised by the source agency. The DRR road dataset shown in source status is a 2022 archive, not current road passability. For current highway conditions use the official DOH hotline 1586 and agency bulletins.": "ဒေတာတန်ဖိုးများသည် နောက်ကျခြင်း၊ ပျောက်ဆုံးခြင်း သို့မဟုတ် ရင်းမြစ်ဌာနက ပြင်ဆင်ခြင်း ဖြစ်နိုင်သည်။ DRR လမ်းဒေတာသည် ၂၀၂၂ မှတ်တမ်းဖြစ်ပြီး လက်ရှိလမ်းသွားလာနိုင်မှု မဟုတ်ပါ။ လက်ရှိလမ်းအခြေအနေအတွက် DOH အရေးပေါ်ဖုန်း 1586 နှင့် တရားဝင်ကြေညာချက်များကို အသုံးပြုပါ။",
+  "Close station details": "စခန်းအသေးစိတ် ပိတ်ရန်",
+  "Tak Province": "တာ့ခ်ပြည်နယ်",
+  "Water level": "ရေအဆင့်",
+  "from previous": "ယခင်တိုင်းတာချက်မှ",
+  "Source agency": "ရင်းမြစ်ဌာန",
+  "Observed": "တိုင်းတာချိန်",
+  "River": "မြစ်",
+  "Situation code": "အခြေအနေကုဒ်",
+  "Do not issue evacuation or road-closure instructions from this dashboard alone. Confirm with DDPM and the responsible local authority.": "ဤဒက်ရှ်ဘုတ်တစ်ခုတည်းကို အခြေခံ၍ ရွှေ့ပြောင်းခြင်း သို့မဟုတ် လမ်းပိတ်ခြင်း အမိန့် မထုတ်ပါနှင့်။ DDPM နှင့် သက်ဆိုင်ရာ ဒေသအာဏာပိုင်ကို အတည်ပြုပါ။",
+  "Close details": "အသေးစိတ် ပိတ်ရန်",
+  "Very high water situation": "အလွန်မြင့်မားသော ရေအခြေအနေ",
+  "High water situation": "ရေအဆင့်မြင့် အခြေအနေ",
+  "Not reported": "မဖော်ပြထားပါ",
+  "Language": "ဘာသာစကား",
+  "Official water level notice": "တရားဝင် ရေအဆင့် အသိပေးချက်",
+  "Zoom in": "မြေပုံချဲ့ရန်",
+  "Zoom out": "မြေပုံလျှော့ရန်",
+  "Center map": "မြေပုံအလယ်ထားရန်",
+  "Filter water flags": "ရေအဆင့် သတိပေးချက် စစ်ထုတ်ရန်",
+  "Official feed coverage for the five target districts": "ပစ်မှတ်ခရိုင် ၅ ခုအတွက် တရားဝင်ဒေတာ လွှမ်းခြုံမှု",
+  "Source value": "ရင်းမြစ်မှ တန်ဖိုး",
+};
 
 function mapPosition(latitude: number, longitude: number) {
   const x = Math.min(90, Math.max(10, ((longitude - 97.75) / (99.2 - 97.75)) * 100));
@@ -138,18 +229,25 @@ function mapPosition(latitude: number, longitude: number) {
   return { x, y };
 }
 
-function formatFeedTime(value?: string | null) {
-  if (!value) return "Not reported";
+function formatFeedTime(value?: string | null, language: Language = "en") {
+  if (!value) return language === "my" ? myTranslations["Not reported"] : "Not reported";
   if (/^\d{4}-\d{2}-\d{2}/.test(value)) return value.replace("T", " ").slice(0, 16);
   return value;
 }
 
-function levelLabel(level: number) {
+function levelLabel(level: number, language: Language = "en") {
+  if (language === "my") return level > 0 ? `အဆင့် ${level}` : "အဆင့်မရှိ";
   if (level >= 5) return "Level 5";
   if (level >= 4) return "Level 4";
   if (level >= 3) return "Level 3";
   if (level > 0) return `Level ${level}`;
   return "No level";
+}
+
+function displayDistrictName(apiName: string, language: Language) {
+  const district = districtDefinitions.find((item) => item.apiName === apiName);
+  if (!district) return apiName.replace(" District", "");
+  return language === "my" ? district.nameMy : district.name;
 }
 
 export default function Home() {
@@ -162,6 +260,8 @@ export default function Home() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [drawerId, setDrawerId] = useState<string | null>(null);
   const [bannerVisible, setBannerVisible] = useState(true);
+  const [language, setLanguage] = useState<Language>("en");
+  const tr = useCallback((text: string) => language === "my" ? myTranslations[text] ?? text : text, [language]);
 
   const loadGovernmentData = useCallback(async () => {
     setLoading(true);
@@ -182,6 +282,16 @@ export default function Home() {
     void loadGovernmentData();
   }, [loadGovernmentData]);
 
+  useEffect(() => {
+    const savedLanguage = window.localStorage.getItem("floodwatch-language");
+    if (savedLanguage === "en" || savedLanguage === "my") setLanguage(savedLanguage);
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.lang = language;
+    window.localStorage.setItem("floodwatch-language", language);
+  }, [language]);
+
   const alerts = useMemo<LiveAlert[]>(() => {
     return (data?.water?.stations ?? [])
       .filter((station) => station.situationLevel >= 4)
@@ -191,12 +301,16 @@ export default function Home() {
         return {
           id: station.code,
           severity: station.situationLevel >= 5 ? "critical" : "warning",
-          title: station.situationLevel >= 5 ? "Very high water situation" : "High water situation",
-          district: station.district.replace(" District", ""),
-          detail: station.bankDistanceM >= 0
-            ? `${station.bankDistanceM.toFixed(2)} m below the reported bank level`
-            : `${Math.abs(station.bankDistanceM).toFixed(2)} m above the reported bank level`,
-          time: formatFeedTime(station.observedAt),
+          title: tr(station.situationLevel >= 5 ? "Very high water situation" : "High water situation"),
+          district: displayDistrictName(station.district, language),
+          detail: language === "my"
+            ? station.bankDistanceM >= 0
+              ? `ဖော်ပြထားသော ကမ်းပါးအဆင့်အောက် ${station.bankDistanceM.toFixed(2)} မီတာ`
+              : `ဖော်ပြထားသော ကမ်းပါးအဆင့်အထက် ${Math.abs(station.bankDistanceM).toFixed(2)} မီတာ`
+            : station.bankDistanceM >= 0
+              ? `${station.bankDistanceM.toFixed(2)} m below the reported bank level`
+              : `${Math.abs(station.bankDistanceM).toFixed(2)} m above the reported bank level`,
+          time: formatFeedTime(station.observedAt, language),
           level: `${station.levelMsl.toFixed(2)} m MSL`,
           delta: `${change >= 0 ? "+" : ""}${change.toFixed(2)} m`,
           x: position.x,
@@ -204,7 +318,7 @@ export default function Home() {
           station,
         };
       });
-  }, [data]);
+  }, [data, language, tr]);
 
   const selected = alerts.find((alert) => alert.id === selectedId) ?? alerts[0] ?? null;
   const drawerAlert = alerts.find((alert) => alert.id === drawerId) ?? null;
@@ -236,71 +350,76 @@ export default function Home() {
   return (
     <main className="app-shell">
       <header className="topbar">
-        <a className="brand" href="#overview" aria-label="Floodwatch overview">
+        <a className="brand" href="#overview" aria-label={tr("Overview")}>
           <span className="brand-mark"><Waves size={20} strokeWidth={2.4} /></span>
           <span>FLOODWATCH</span>
         </a>
 
-        <nav className="primary-nav" aria-label="Primary navigation">
-          <a className="active" href="#overview">Overview</a>
-          <a href="#alerts">Water flags <span className="nav-count">{alerts.length}</span></a>
-          <a href="#districts">Districts</a>
-          <a href="#sources">Sources</a>
+        <nav className="primary-nav" aria-label={tr("Overview")}>
+          <a className="active" href="#overview">{tr("Overview")}</a>
+          <a href="#alerts">{tr("Water flags")} <span className="nav-count">{alerts.length}</span></a>
+          <a href="#districts">{tr("Districts")}</a>
+          <a href="#sources">{tr("Sources")}</a>
         </nav>
 
         <div className="topbar-actions">
-          <div className="system-state" aria-label={`${connectedCount} of 4 official sources connected`}>
-            <span className={connectedCount === 4 ? "live-dot" : "live-dot partial"} />
-            <span>{connectedCount}/4 official sources</span>
+          <div className="language-switch" role="group" aria-label={tr("Language")}>
+            <Languages size={15} />
+            <button type="button" aria-pressed={language === "en"} className={language === "en" ? "active" : ""} onClick={() => setLanguage("en")}>EN</button>
+            <button type="button" aria-pressed={language === "my"} className={language === "my" ? "active" : ""} onClick={() => setLanguage("my")}>မြန်မာ</button>
           </div>
-          <button className="icon-button notification-button" aria-label="Open data notices" title="Data notices">
+          <div className="system-state" aria-label={`${connectedCount}/4 ${tr("official sources")}`}>
+            <span className={connectedCount === 4 ? "live-dot" : "live-dot partial"} />
+            <span>{connectedCount}/4 {tr("official sources")}</span>
+          </div>
+          <button className="icon-button notification-button" aria-label={tr("Water flags")} title={tr("Water flags")}>
             <Bell size={19} />
             {alerts.length > 0 && <span className="notification-dot">{alerts.length}</span>}
           </button>
-          <div className="operator-avatar" aria-label="Tak Province">TAK</div>
+          <div className="operator-avatar" aria-label={tr("Tak Province")}>TAK</div>
         </div>
       </header>
 
       <div className="page-content" id="overview">
         <div className="page-heading">
           <div>
-            <p className="eyebrow">FIVE WESTERN TAK DISTRICTS - OFFICIAL GOVERNMENT FEEDS</p>
-            <h1>Western Tak flood monitoring</h1>
+            <p className="eyebrow">{tr("FIVE WESTERN TAK DISTRICTS - OFFICIAL GOVERNMENT FEEDS")}</p>
+            <h1>{tr("Western Tak flood monitoring")}</h1>
             <p className="heading-meta">
-              <span>Generated {data ? new Date(data.generatedAt).toLocaleString() : "when feeds respond"}</span>
+              <span>{tr("Generated")} {data ? new Date(data.generatedAt).toLocaleString(language === "my" ? "my-MM" : "en-GB") : tr("when feeds respond")}</span>
               <span className="meta-separator" />
-              <span className="official-badge">NO DEMO READINGS</span>
+              <span className="official-badge">{tr("NO DEMO READINGS")}</span>
             </p>
           </div>
           <button className="dispatch-button" type="button" onClick={() => void loadGovernmentData()} disabled={loading}>
-            <RefreshCw className={loading ? "spinning" : ""} size={18} /> {loading ? "Refreshing" : "Refresh official data"}
+            <RefreshCw className={loading ? "spinning" : ""} size={18} /> {tr(loading ? "Refreshing" : "Refresh official data")}
           </button>
         </div>
 
         {loading && (
           <section className="feed-banner neutral" aria-live="polite">
             <RefreshCw className="spinning" size={20} />
-            <div><strong>Loading official government feeds</strong><span>TMD, ThaiWater, DRR, and DDPM are being checked independently.</span></div>
+            <div><strong>{tr("Loading official government feeds")}</strong><span>{tr("TMD, ThaiWater, DRR, and DDPM are being checked independently.")}</span></div>
           </section>
         )}
 
         {!loading && loadError && (
           <section className="feed-banner unavailable" role="alert">
             <TriangleAlert size={20} />
-            <div><strong>Official feeds could not be reached</strong><span>No cached demonstration values are being shown. Refresh to try again.</span></div>
+            <div><strong>{tr("Official feeds could not be reached")}</strong><span>{tr("No cached demonstration values are being shown. Refresh to try again.")}</span></div>
           </section>
         )}
 
         {!loading && !loadError && alerts.length > 0 && bannerVisible && (
-          <section className="critical-banner high-banner" aria-label="Official water level notice">
+          <section className="critical-banner high-banner" aria-label={tr("Official water level notice")}>
             <div className="critical-icon"><TriangleAlert size={21} /></div>
             <div className="critical-copy">
-              <strong>{alerts.length} Tak station{alerts.length === 1 ? "" : "s"} returned ThaiWater situation level 4 or higher</strong>
-              <span>This is a feed-based monitoring flag, not an evacuation order. Confirm the latest agency bulletin before field action.</span>
+              <strong>{language === "my" ? `ThaiWater အခြေအနေအဆင့် ၄ နှင့်အထက် စခန်း ${alerts.length} ခု ရှိသည်` : `${alerts.length} target-area station${alerts.length === 1 ? "" : "s"} returned ThaiWater situation level 4 or higher`}</strong>
+              <span>{tr("This is a feed-based monitoring flag, not an evacuation order. Confirm the latest agency bulletin before field action.")}</span>
             </div>
             <div className="banner-actions">
-              <a className="source-link-button" href={data?.water?.sourceUrl} target="_blank" rel="noreferrer">Open ThaiWater <ExternalLink size={14} /></a>
-              <button className="banner-close" type="button" aria-label="Dismiss notice" title="Dismiss" onClick={() => setBannerVisible(false)}><X size={18} /></button>
+              <a className="source-link-button" href={data?.water?.sourceUrl} target="_blank" rel="noreferrer">{tr("Open ThaiWater")} <ExternalLink size={14} /></a>
+              <button className="banner-close" type="button" aria-label={tr("Close details")} title={tr("Close details")} onClick={() => setBannerVisible(false)}><X size={18} /></button>
             </div>
           </section>
         )}
@@ -308,21 +427,21 @@ export default function Home() {
         {!loading && !loadError && alerts.length === 0 && (
           <section className="feed-banner connected">
             <CheckCircle2 size={20} />
-            <div><strong>No level 4-5 Tak water stations returned</strong><span>This is not an all-clear. Continue checking TMD, ThaiWater, DDPM, and local authority notices.</span></div>
+            <div><strong>{tr("No level 4-5 Tak water stations returned")}</strong><span>{tr("This is not an all-clear. Continue checking TMD, ThaiWater, DDPM, and local authority notices.")}</span></div>
           </section>
         )}
 
         <section className="operations-grid">
-          <div className="map-panel" aria-label="Tak official monitoring map">
+          <div className="map-panel" aria-label={tr("Western Tak flood monitoring")}>
             <div className="map-toolbar">
               <button className={mapLayer === "warnings" ? "active" : ""} type="button" onClick={() => setMapLayer("warnings")}>
-                <ShieldAlert size={15} /> Water flags
+                <ShieldAlert size={15} /> {language === "my" ? "ရေသတိ" : "Water flags"}
               </button>
               <button className={mapLayer === "rainfall" ? "active" : ""} type="button" onClick={() => setMapLayer("rainfall")}>
-                <CloudRain size={15} /> Rainfall
+                <CloudRain size={15} /> {language === "my" ? "မိုးရေ" : "Rainfall"}
               </button>
               <button className={mapLayer === "gauges" ? "active" : ""} type="button" onClick={() => setMapLayer("gauges")}>
-                <Gauge size={15} /> All gauges
+                <Gauge size={15} /> {language === "my" ? "ရေတိုင်း" : "All gauges"}
               </button>
             </div>
 
@@ -340,7 +459,7 @@ export default function Home() {
                   key={alert.id}
                   style={{ left: `${alert.x}%`, top: `${alert.y}%` }}
                   type="button"
-                  aria-label={`${alert.title} at ${alert.station.name}`}
+                  aria-label={language === "my" ? `${alert.station.name} တွင် ${alert.title}` : `${alert.title} at ${alert.station.name}`}
                   onClick={() => setSelectedId(alert.id)}
                 >
                   <MapPin size={17} fill="currentColor" /><span>{alert.district}</span>
@@ -350,7 +469,7 @@ export default function Home() {
               {mapLayer === "rainfall" && (data?.water?.rainfallStations ?? []).slice(0, 20).map((station) => {
                 const position = mapPosition(station.latitude, station.longitude);
                 return (
-                  <button className="map-marker rainfall" key={station.id} style={{ left: `${position.x}%`, top: `${position.y}%` }} type="button" title={`${station.rainfall24hMm} mm in 24h`}>
+                  <button className="map-marker rainfall" key={station.id} style={{ left: `${position.x}%`, top: `${position.y}%` }} type="button" title={language === "my" ? `၂၄ နာရီ မိုးရေ ${station.rainfall24hMm} mm` : `${station.rainfall24hMm} mm in 24h`}>
                     <CloudRain size={16} /><span>{station.rainfall24hMm} mm</span>
                   </button>
                 );
@@ -359,35 +478,35 @@ export default function Home() {
               {mapLayer === "gauges" && (data?.water?.stations ?? []).map((station) => {
                 const position = mapPosition(station.latitude, station.longitude);
                 return (
-                  <button className={`map-marker ${station.situationLevel >= 5 ? "critical" : station.situationLevel >= 4 ? "warning" : "watch"}`} key={station.id} style={{ left: `${position.x}%`, top: `${position.y}%` }} type="button" title={`${station.name}: ${levelLabel(station.situationLevel)}`}>
+                  <button className={`map-marker ${station.situationLevel >= 5 ? "critical" : station.situationLevel >= 4 ? "warning" : "watch"}`} key={station.id} style={{ left: `${position.x}%`, top: `${position.y}%` }} type="button" title={`${station.name}: ${levelLabel(station.situationLevel, language)}`}>
                     <Gauge size={16} /><span>{station.name}</span>
                   </button>
                 );
               })}
 
               {mapLayer === "warnings" && !loading && alerts.length === 0 && (
-                <div className="map-empty"><CheckCircle2 size={22} /><strong>No level 4-5 stations</strong><span>Based on the latest ThaiWater response.</span></div>
+                <div className="map-empty"><CheckCircle2 size={22} /><strong>{tr("No level 4-5 stations")}</strong><span>{tr("Based on the latest ThaiWater response.")}</span></div>
               )}
 
               <div className="map-controls">
-                <button type="button" aria-label="Zoom in" title="Zoom in"><ZoomIn size={18} /></button>
-                <button type="button" aria-label="Zoom out" title="Zoom out"><ZoomOut size={18} /></button>
-                <button type="button" aria-label="Center map" title="Center map"><Crosshair size={18} /></button>
+                <button type="button" aria-label={tr("Zoom in")} title={tr("Zoom in")}><ZoomIn size={18} /></button>
+                <button type="button" aria-label={tr("Zoom out")} title={tr("Zoom out")}><ZoomOut size={18} /></button>
+                <button type="button" aria-label={tr("Center map")} title={tr("Center map")}><Crosshair size={18} /></button>
               </div>
 
               {selected && mapLayer === "warnings" && (
                 <article className="map-callout">
-                  <div className="callout-heading"><span className={`severity-pill ${selected.severity}`}>{levelLabel(selected.station.situationLevel)}</span><span>{selected.id}</span></div>
+                  <div className="callout-heading"><span className={`severity-pill ${selected.severity}`}>{levelLabel(selected.station.situationLevel, language)}</span><span>{selected.id}</span></div>
                   <strong>{selected.station.name}</strong>
                   <p>{selected.district} - {selected.level}</p>
-                  <button type="button" onClick={() => setDrawerId(selected.id)}>View source details <ChevronRight size={15} /></button>
+                  <button type="button" onClick={() => setDrawerId(selected.id)}>{tr("View source details")} <ChevronRight size={15} /></button>
                 </article>
               )}
 
               <div className="map-legend">
-                <span><i className="legend-dot critical" /> Level 5</span>
-                <span><i className="legend-dot warning" /> Level 4</span>
-                <span><i className="legend-dot watch" /> Level 1-3</span>
+                <span><i className="legend-dot critical" /> {levelLabel(5, language)}</span>
+                <span><i className="legend-dot warning" /> {levelLabel(4, language)}</span>
+                <span><i className="legend-dot watch" /> {language === "my" ? "အဆင့် ၁-၃" : "Level 1-3"}</span>
               </div>
               <a className="map-credit" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">(c) OpenStreetMap</a>
             </div>
@@ -395,16 +514,16 @@ export default function Home() {
 
           <aside className="alerts-panel" id="alerts">
             <div className="panel-heading">
-              <div><span className="panel-kicker">THAIWATER LIVE FEED</span><h2>High water flags <span>{alerts.length}</span></h2></div>
-              <a className="icon-button" href={data?.water?.sourceUrl ?? "https://www.thaiwater.net/"} target="_blank" rel="noreferrer" aria-label="Open ThaiWater" title="Open ThaiWater"><ExternalLink size={18} /></a>
+              <div><span className="panel-kicker">{tr("THAIWATER LIVE FEED")}</span><h2>{tr("High water flags")} <span>{alerts.length}</span></h2></div>
+              <a className="icon-button" href={data?.water?.sourceUrl ?? "https://www.thaiwater.net/"} target="_blank" rel="noreferrer" aria-label={tr("Open ThaiWater")} title={tr("Open ThaiWater")}><ExternalLink size={18} /></a>
             </div>
 
-            <label className="search-field"><Search size={16} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search station or district" /></label>
+            <label className="search-field"><Search size={16} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={tr("Search station or district")} /></label>
 
-            <div className="severity-tabs compact" aria-label="Filter water flags">
-              <button type="button" className={severity === "all" ? "active" : ""} onClick={() => setSeverity("all")}>All</button>
-              <button type="button" className={severity === "critical" ? "active" : ""} onClick={() => setSeverity("critical")}>Level 5</button>
-              <button type="button" className={severity === "warning" ? "active" : ""} onClick={() => setSeverity("warning")}>Level 4</button>
+            <div className="severity-tabs compact" aria-label={tr("Filter water flags")}>
+              <button type="button" className={severity === "all" ? "active" : ""} onClick={() => setSeverity("all")}>{tr("All")}</button>
+              <button type="button" className={severity === "critical" ? "active" : ""} onClick={() => setSeverity("critical")}>{levelLabel(5, language)}</button>
+              <button type="button" className={severity === "warning" ? "active" : ""} onClick={() => setSeverity("warning")}>{levelLabel(4, language)}</button>
             </div>
 
             <div className="alert-list live-list">
@@ -414,50 +533,55 @@ export default function Home() {
                     <span className={`alert-indicator ${alert.severity}`} />
                     <span className="alert-content">
                       <span className="alert-topline"><b>{alert.station.name}</b><small>{alert.time}</small></span>
-                      <strong>{alert.district} - {levelLabel(alert.station.situationLevel)}</strong>
+                      <strong>{alert.district} - {levelLabel(alert.station.situationLevel, language)}</strong>
                       <span className="alert-reading"><Gauge size={14} /> {alert.level} <em>{alert.delta}</em></span>
                     </span>
                     <ChevronRight className="row-chevron" size={17} />
                   </button>
                 </article>
               ))}
-              {!loading && filteredAlerts.length === 0 && <p className="empty-state">No official water flags match this filter.</p>}
+              {!loading && filteredAlerts.length === 0 && <p className="empty-state">{tr("No official water flags match this filter.")}</p>}
             </div>
 
             <div className="weather-summary">
-              <div className="weather-summary-heading"><span>TMD observations</span><small>{data?.weather?.stations.length ?? 0} target-area stations</small></div>
+              <div className="weather-summary-heading"><span>{tr("TMD observations")}</span><small>{data?.weather?.stations.length ?? 0} {tr("target-area stations")}</small></div>
               {(data?.weather?.stations ?? []).slice(0, 3).map((station) => (
                 <div className="weather-row" key={station.code}>
-                  <span><b>{station.name}</b><small>{formatFeedTime(station.observedAt)}</small></span>
+                  <span><b>{station.name}</b><small>{formatFeedTime(station.observedAt, language)}</small></span>
                   <span><Thermometer size={13} /> {station.temperatureC.toFixed(1)} C</span>
                   <span><CloudRain size={13} /> {station.rainfall24hMm.toFixed(1)} mm</span>
                 </div>
               ))}
-              {!data?.weather && !loading && <p className="source-unavailable-copy">TMD feed unavailable.</p>}
+              {!data?.weather && !loading && <p className="source-unavailable-copy">{tr("TMD feed unavailable.")}</p>}
             </div>
           </aside>
         </section>
 
-        <section className="metric-strip" aria-label="Official flood monitoring summary">
-          <div className="metric"><span className="metric-icon red"><ShieldAlert size={19} /></span><span><small>WATER LEVEL FLAGS</small><strong>{data?.water?.flaggedCount ?? "-"}</strong><em>ThaiWater level 4-5</em></span></div>
-          <div className="metric"><span className="metric-icon gold"><CloudRain size={19} /></span><span><small>MAXIMUM RAIN 24H</small><strong>{maximumRainStation ? `${maximumRainStation.rainfall24hMm.toFixed(1)} mm` : "-"}</strong><em>{maximumRainStation?.name ?? "No feed"}</em></span></div>
-          <div className="metric"><span className="metric-icon teal"><Gauge size={19} /></span><span><small>FIVE-DISTRICT GAUGES</small><strong>{data?.water?.stations.length ?? "-"}</strong><em>{formatFeedTime(data?.water?.observedAt)}</em></span></div>
-          <div className="metric"><span className="metric-icon blue"><Building2 size={19} /></span><span><small>DDPM SHELTER RECORDS</small><strong>{data?.ddpm?.shelterCount ?? "-"}</strong><em>Dataset: Aug 2024</em></span></div>
+        <section className="metric-strip" aria-label={tr("Western Tak flood monitoring")}>
+          <div className="metric"><span className="metric-icon red"><ShieldAlert size={19} /></span><span><small>{tr("WATER LEVEL FLAGS")}</small><strong>{data?.water?.flaggedCount ?? "-"}</strong><em>{tr("ThaiWater level 4-5")}</em></span></div>
+          <div className="metric"><span className="metric-icon gold"><CloudRain size={19} /></span><span><small>{tr("MAXIMUM RAIN 24H")}</small><strong>{maximumRainStation ? `${maximumRainStation.rainfall24hMm.toFixed(1)} mm` : "-"}</strong><em>{maximumRainStation?.name ?? tr("No feed")}</em></span></div>
+          <div className="metric"><span className="metric-icon teal"><Gauge size={19} /></span><span><small>{tr("FIVE-DISTRICT GAUGES")}</small><strong>{data?.water?.stations.length ?? "-"}</strong><em>{formatFeedTime(data?.water?.observedAt, language)}</em></span></div>
+          <div className="metric"><span className="metric-icon blue"><Building2 size={19} /></span><span><small>{tr("DDPM SHELTER RECORDS")}</small><strong>{data?.ddpm?.shelterCount ?? "-"}</strong><em>{tr("Dataset: Aug 2024")}</em></span></div>
         </section>
 
-        <section className="source-status-strip" id="sources" aria-label="Official source status">
-          <div className="source-title"><Database size={18} /><span><strong>Official sources</strong><small>Each feed is checked independently</small></span></div>
+        <section className="source-status-strip" id="sources" aria-label={tr("Official sources")}>
+          <div className="source-title"><Database size={18} /><span><strong>{tr("Official sources")}</strong><small>{tr("Each feed is checked independently")}</small></span></div>
           {(data?.sources ?? []).map((source) => (
             <a className="source-item" href={source.url} target="_blank" rel="noreferrer" key={source.id}>
               <span className={`source-state ${source.status}`} />
               <span>
                 <strong>{source.shortName}</strong>
                 <small>
-                  {source.mode}
-                  {source.id === "tmd" && data?.weather ? ` - ${data.weather.stations.length} target-area stations` : ""}
-                  {source.id === "thaiwater" && data?.water ? ` - ${data.water.stations.length} target-area gauges` : ""}
-                  {source.id === "roads" && data?.roads ? ` - ${data.roads.recordCount} target-area archive records` : ""}
-                  {source.id === "ddpm" && data?.ddpm ? ` - ${data.ddpm.shelterCount} target-area shelter records` : ""}
+                  {language === "my"
+                    ? source.id === "tmd" ? "၃ နာရီတစ်ကြိမ် တိုက်ရိုက်တိုင်းတာချက်"
+                      : source.id === "thaiwater" ? "ရေတိုင်းစခန်းနှင့် ၂၄ နာရီ မိုးရေ"
+                      : source.id === "roads" ? "လမ်းရေဘေး မှတ်တမ်းဟောင်း (၂၀၂၂)"
+                      : "ခိုလှုံရာ ပြင်ဆင်မှုဒေတာ"
+                    : source.mode}
+                  {source.id === "tmd" && data?.weather ? ` - ${data.weather.stations.length} ${tr("target-area stations")}` : ""}
+                  {source.id === "thaiwater" && data?.water ? ` - ${data.water.stations.length} ${tr("target-area gauges")}` : ""}
+                  {source.id === "roads" && data?.roads ? ` - ${data.roads.recordCount} ${tr("target-area archive records")}` : ""}
+                  {source.id === "ddpm" && data?.ddpm ? ` - ${data.ddpm.shelterCount} ${tr("target-area shelter records")}` : ""}
                 </small>
               </span>
               <ExternalLink size={14} />
@@ -468,38 +592,38 @@ export default function Home() {
         <section className="lower-grid">
           <article className="telemetry-panel" id="telemetry">
             <div className="section-heading">
-              <div><span className="panel-kicker">LATEST THAIWATER RESPONSE</span><h2>Five-district water gauges</h2></div>
-              <span className="coverage-count">{data?.water?.stations.length ?? 0} stations</span>
+              <div><span className="panel-kicker">{tr("LATEST THAIWATER RESPONSE")}</span><h2>{tr("Five-district water gauges")}</h2></div>
+              <span className="coverage-count">{data?.water?.stations.length ?? 0} {tr("stations")}</span>
             </div>
 
             <div className="live-gauge-list">
-              <div className="live-gauge-row gauge-head"><span>Station</span><span>Level</span><span>Bank distance</span><span>Status</span></div>
+              <div className="live-gauge-row gauge-head"><span>{tr("Station")}</span><span>{tr("Level")}</span><span>{tr("Bank distance")}</span><span>{tr("Status")}</span></div>
               {(data?.water?.stations ?? []).slice(0, 9).map((station) => (
                 <div className="live-gauge-row" key={station.id}>
-                  <span><b>{station.name}</b><small>{station.district.replace(" District", "")} - {formatFeedTime(station.observedAt)}</small></span>
+                  <span><b>{station.name}</b><small>{displayDistrictName(station.district, language)} - {formatFeedTime(station.observedAt, language)}</small></span>
                   <span><b>{station.levelMsl.toFixed(2)} m</b><small>MSL</small></span>
-                  <span><b>{station.bankDistanceM.toFixed(2)} m</b><small>{station.bankDistanceText || "Reported difference"}</small></span>
-                  <span><i className={`risk-badge ${station.situationLevel >= 5 ? "critical" : station.situationLevel >= 4 ? "warning" : station.situationLevel >= 3 ? "watch" : "normal"}`}>{levelLabel(station.situationLevel)}</i></span>
+                  <span><b>{station.bankDistanceM.toFixed(2)} m</b><small>{language === "my" ? tr("Reported difference") : station.bankDistanceText || tr("Reported difference")}</small></span>
+                  <span><i className={`risk-badge ${station.situationLevel >= 5 ? "critical" : station.situationLevel >= 4 ? "warning" : station.situationLevel >= 3 ? "watch" : "normal"}`}>{levelLabel(station.situationLevel, language)}</i></span>
                 </div>
               ))}
-              {!data?.water && !loading && <p className="empty-state">ThaiWater feed unavailable. No substitute values are shown.</p>}
+              {!data?.water && !loading && <p className="empty-state">{tr("ThaiWater feed unavailable. No substitute values are shown.")}</p>}
             </div>
           </article>
 
           <article className="district-panel" id="districts">
             <div className="section-heading">
-              <div><span className="panel-kicker">FIVE TARGET DISTRICTS</span><h2>Feed coverage</h2></div>
-              <span className="coverage-count">5 districts checked</span>
+              <div><span className="panel-kicker">{tr("FIVE TARGET DISTRICTS")}</span><h2>{tr("Feed coverage")}</h2></div>
+              <span className="coverage-count">{tr("5 districts checked")}</span>
             </div>
 
-            <div className="district-table" role="table" aria-label="Official feed coverage for the five target districts">
-              <div className="district-row table-head" role="row"><span>District</span><span>Rain 24h</span><span>Water</span><span aria-hidden="true" /></div>
+            <div className="district-table" role="table" aria-label={tr("Official feed coverage for the five target districts")}>
+              <div className="district-row table-head" role="row"><span>{tr("District")}</span><span>{tr("Rain 24h")}</span><span>{tr("Water")}</span><span aria-hidden="true" /></div>
               {districtRows.map((district) => (
                 <div className="district-row" role="row" key={district.name}>
-                  <span><i className={`status-mark ${district.maximumLevel >= 5 ? "critical" : district.maximumLevel >= 4 ? "warning" : district.gaugeCount ? "normal" : "unavailable"}`} /><b>{district.name}</b><small>{district.rainCount} rain / {district.gaugeCount} water stations</small></span>
-                  <span><b>{district.rainCount ? `${district.maximumRain.toFixed(1)} mm` : "-"}</b><small>{district.rainCount ? "Maximum" : "No station"}</small></span>
-                  <span><i className={`risk-badge ${district.maximumLevel >= 5 ? "critical" : district.maximumLevel >= 4 ? "warning" : district.maximumLevel >= 3 ? "watch" : district.gaugeCount ? "normal" : "unavailable"}`}>{district.gaugeCount ? levelLabel(district.maximumLevel) : "No gauge"}</i></span>
-                  <a href={data?.water?.sourceUrl ?? "https://www.thaiwater.net/"} target="_blank" rel="noreferrer" aria-label={`Open ThaiWater for ${district.name}`}><ExternalLink size={15} /></a>
+                  <span><i className={`status-mark ${district.maximumLevel >= 5 ? "critical" : district.maximumLevel >= 4 ? "warning" : district.gaugeCount ? "normal" : "unavailable"}`} /><b>{language === "my" ? district.nameMy : district.name}</b><small>{language === "my" ? `မိုးရေစခန်း ${district.rainCount} / ရေတိုင်းစခန်း ${district.gaugeCount}` : `${district.rainCount} rain / ${district.gaugeCount} water stations`}</small></span>
+                  <span><b>{district.rainCount ? `${district.maximumRain.toFixed(1)} mm` : "-"}</b><small>{tr(district.rainCount ? "Maximum" : "No station")}</small></span>
+                  <span><i className={`risk-badge ${district.maximumLevel >= 5 ? "critical" : district.maximumLevel >= 4 ? "warning" : district.maximumLevel >= 3 ? "watch" : district.gaugeCount ? "normal" : "unavailable"}`}>{district.gaugeCount ? levelLabel(district.maximumLevel, language) : tr("No gauge")}</i></span>
+                  <a href={data?.water?.sourceUrl ?? "https://www.thaiwater.net/"} target="_blank" rel="noreferrer" aria-label={language === "my" ? `${district.nameMy} အတွက် ThaiWater ဖွင့်ရန်` : `Open ThaiWater for ${district.name}`}><ExternalLink size={15} /></a>
                 </div>
               ))}
             </div>
@@ -508,45 +632,45 @@ export default function Home() {
 
         <section className="data-caveat">
           <Info size={17} />
-          <p><strong>Operational use:</strong> Feed values can be delayed, missing, or revised by the source agency. The DRR road dataset shown in source status is a 2022 archive, not current road passability. For current highway conditions use the official DOH hotline 1586 and agency bulletins.</p>
+          <p><strong>{tr("Operational use:")}</strong> {tr("Feed values can be delayed, missing, or revised by the source agency. The DRR road dataset shown in source status is a 2022 archive, not current road passability. For current highway conditions use the official DOH hotline 1586 and agency bulletins.")}</p>
         </section>
       </div>
 
-      <nav className="mobile-nav" aria-label="Mobile navigation">
-        <a className="active" href="#overview"><Map size={19} /><span>Overview</span></a>
-        <a href="#alerts"><BellRing size={19} /><span>Water flags</span></a>
-        <a href="#districts"><Gauge size={19} /><span>Districts</span></a>
-        <a href="#sources"><Database size={19} /><span>Sources</span></a>
+      <nav className="mobile-nav" aria-label={tr("Overview")}>
+        <a className="active" href="#overview"><Map size={19} /><span>{tr("Overview")}</span></a>
+        <a href="#alerts"><BellRing size={19} /><span>{tr("Water flags")}</span></a>
+        <a href="#districts"><Gauge size={19} /><span>{tr("Districts")}</span></a>
+        <a href="#sources"><Database size={19} /><span>{tr("Sources")}</span></a>
       </nav>
 
       {drawerAlert && (
         <div className="drawer-backdrop" role="presentation" onMouseDown={(event) => { if (event.currentTarget === event.target) setDrawerId(null); }}>
           <aside className="incident-drawer" role="dialog" aria-modal="true" aria-labelledby="incident-title">
             <div className="drawer-header">
-              <div><span className={`severity-pill ${drawerAlert.severity}`}>{levelLabel(drawerAlert.station.situationLevel)}</span><small>{drawerAlert.id} - {drawerAlert.time}</small></div>
-              <button className="icon-button" type="button" onClick={() => setDrawerId(null)} aria-label="Close station details" title="Close"><X size={20} /></button>
+              <div><span className={`severity-pill ${drawerAlert.severity}`}>{levelLabel(drawerAlert.station.situationLevel, language)}</span><small>{drawerAlert.id} - {drawerAlert.time}</small></div>
+              <button className="icon-button" type="button" onClick={() => setDrawerId(null)} aria-label={tr("Close station details")} title={tr("Close details")}><X size={20} /></button>
             </div>
             <h2 id="incident-title">{drawerAlert.station.name}</h2>
-            <p className="drawer-location"><MapPin size={16} /> {drawerAlert.district}, Tak Province</p>
-            <p className="drawer-summary">ThaiWater reports {drawerAlert.detail}. The situation level is supplied by the source feed and should be checked against the latest agency bulletin.</p>
+            <p className="drawer-location"><MapPin size={16} /> {drawerAlert.district}, {tr("Tak Province")}</p>
+            <p className="drawer-summary">{language === "my" ? `ThaiWater ဒေတာအရ ${drawerAlert.detail}။ အခြေအနေအဆင့်ကို ရင်းမြစ်ဒေတာမှ ရယူထားပြီး သက်ဆိုင်ရာဌာန၏ နောက်ဆုံးကြေညာချက်နှင့် စစ်ဆေးရမည်။` : `ThaiWater reports ${drawerAlert.detail}. The situation level is supplied by the source feed and should be checked against the latest agency bulletin.`}</p>
 
             <div className="drawer-stats">
-              <span><small>Water level</small><strong>{drawerAlert.level}</strong><em>{drawerAlert.delta} from previous</em></span>
-              <span><small>Bank distance</small><strong>{drawerAlert.station.bankDistanceM.toFixed(2)} m</strong><em>{drawerAlert.station.bankDistanceText || "Source value"}</em></span>
+              <span><small>{tr("Water level")}</small><strong>{drawerAlert.level}</strong><em>{drawerAlert.delta} {tr("from previous")}</em></span>
+              <span><small>{tr("Bank distance")}</small><strong>{drawerAlert.station.bankDistanceM.toFixed(2)} m</strong><em>{language === "my" ? tr("Reported difference") : drawerAlert.station.bankDistanceText || tr("Source value")}</em></span>
             </div>
 
             <div className="official-detail-list">
-              <span><small>Source agency</small><b>{drawerAlert.station.agency}</b></span>
-              <span><small>Observed</small><b>{drawerAlert.time}</b></span>
-              <span><small>River</small><b>{drawerAlert.station.river}</b></span>
-              <span><small>Situation code</small><b>{drawerAlert.station.situationLevel}</b></span>
+              <span><small>{tr("Source agency")}</small><b>{drawerAlert.station.agency}</b></span>
+              <span><small>{tr("Observed")}</small><b>{drawerAlert.time}</b></span>
+              <span><small>{tr("River")}</small><b>{drawerAlert.station.river}</b></span>
+              <span><small>{tr("Situation code")}</small><b>{drawerAlert.station.situationLevel}</b></span>
             </div>
 
-            <div className="data-caveat compact"><Info size={16} /><p>Do not issue evacuation or road-closure instructions from this dashboard alone. Confirm with DDPM and the responsible local authority.</p></div>
+            <div className="data-caveat compact"><Info size={16} /><p>{tr("Do not issue evacuation or road-closure instructions from this dashboard alone. Confirm with DDPM and the responsible local authority.")}</p></div>
 
             <div className="drawer-actions">
-              <a className="primary" href={data?.water?.sourceUrl ?? "https://www.thaiwater.net/"} target="_blank" rel="noreferrer"><ExternalLink size={17} /> Open ThaiWater</a>
-              <button type="button" onClick={() => setDrawerId(null)}>Close details</button>
+              <a className="primary" href={data?.water?.sourceUrl ?? "https://www.thaiwater.net/"} target="_blank" rel="noreferrer"><ExternalLink size={17} /> {tr("Open ThaiWater")}</a>
+              <button type="button" onClick={() => setDrawerId(null)}>{tr("Close details")}</button>
             </div>
           </aside>
         </div>

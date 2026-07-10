@@ -31,7 +31,7 @@ body {
   margin: 0;
   background: var(--canvas);
   color: var(--ink);
-  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: Inter, "Myanmar Text", "Noto Sans Myanmar", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-size: 14px;
   letter-spacing: 0;
 }
@@ -135,6 +135,50 @@ a {
   display: flex;
   gap: 12px;
   justify-self: end;
+}
+
+.language-switch {
+  align-items: center;
+  background: #f4f7f7;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  display: flex;
+  flex: 0 0 auto;
+  gap: 2px;
+  height: 36px;
+  padding: 3px 4px 3px 7px;
+}
+
+.language-switch > svg {
+  color: #66767c;
+  margin-right: 2px;
+}
+
+.language-switch button {
+  background: transparent;
+  border: 0;
+  border-radius: 3px;
+  color: #68777f;
+  cursor: pointer;
+  font-size: 9px;
+  font-weight: 750;
+  height: 27px;
+  padding: 0 7px;
+}
+
+.language-switch button.active {
+  background: white;
+  box-shadow: 0 1px 3px rgba(26, 45, 52, 0.12);
+  color: var(--teal-dark);
+}
+
+html[lang="my"] body {
+  line-height: 1.45;
+}
+
+html[lang="my"] .map-toolbar button,
+html[lang="my"] .mobile-nav a {
+  line-height: 1.35;
 }
 
 .system-state {
@@ -1972,6 +2016,14 @@ a {
     display: none;
   }
 
+  .system-state {
+    display: none;
+  }
+
+  .language-switch button {
+    padding: 0 6px;
+  }
+
   .page-content {
     padding: 17px 12px 84px;
   }
@@ -2141,6 +2193,12 @@ a {
 
   .drawer-actions {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 380px) {
+  .brand > span:last-child {
+    display: none;
   }
 }
 
