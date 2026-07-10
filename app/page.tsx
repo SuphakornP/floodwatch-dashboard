@@ -3,33 +3,114 @@
 import {
   Bell,
   BellRing,
-  Check,
+  Building2,
   CheckCircle2,
   ChevronRight,
   CloudRain,
   Crosshair,
+  Database,
+  ExternalLink,
   Gauge,
-  Layers3,
+  Info,
   Map,
   MapPin,
-  Navigation,
   RefreshCw,
   Route,
   Search,
   ShieldAlert,
-  Siren,
+  Thermometer,
   TriangleAlert,
-  UsersRound,
   Waves,
   X,
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
-type Severity = "critical" | "warning" | "watch";
+type Severity = "critical" | "warning";
 
-type FloodAlert = {
+type WaterStation = {
+  id: string;
+  code: string;
+  name: string;
+  district: string;
+  river: string;
+  observedAt: string;
+  levelMsl: number;
+  previousLevelMsl: number;
+  bankDistanceM: number;
+  bankDistanceText: string;
+  situationLevel: number;
+  storagePercent: number;
+  latitude: number;
+  longitude: number;
+  agency: string;
+};
+
+type RainStation = {
+  id: string;
+  code: string;
+  name: string;
+  district: string;
+  observedAt: string;
+  rainfall1hMm: number;
+  rainfall24hMm: number;
+  latitude: number;
+  longitude: number;
+  agency: string;
+};
+
+type WeatherStation = {
+  code: string;
+  name: string;
+  observedAt: string;
+  temperatureC: number;
+  humidityPercent: number;
+  rainfallMm: number;
+  rainfall24hMm: number;
+  windSpeedKmh: number;
+  latitude: number;
+  longitude: number;
+};
+
+type SourceStatus = {
+  id: string;
+  name: string;
+  shortName: string;
+  url: string;
+  mode: string;
+  status: "connected" | "unavailable";
+  updatedAt: string | null;
+};
+
+type GovernmentData = {
+  generatedAt: string;
+  weather: { stations: WeatherStation[]; observedAt: string | null; sourceUrl: string } | null;
+  water: {
+    stations: WaterStation[];
+    rainfallStations: RainStation[];
+    flaggedCount: number;
+    observedAt: string | null;
+    sourceUrl: string;
+  } | null;
+  roads: {
+    records: Array<{ id: string; title: string; road: string; date: string; passable: boolean; floodHeightCm: number }>;
+    recordCount: number;
+    blockedCount: number;
+    archiveYear: number;
+    sourceUrl: string;
+  } | null;
+  ddpm: {
+    shelterCount: number;
+    totalCapacity: number;
+    districts: Array<{ district: string; count: number }>;
+    datasetUpdatedAt: string;
+    sourceUrl: string;
+  } | null;
+  sources: SourceStatus[];
+};
+
+type LiveAlert = {
   id: string;
   severity: Severity;
   title: string;
@@ -38,136 +119,123 @@ type FloodAlert = {
   time: string;
   level: string;
   delta: string;
-  people: number;
   x: number;
   y: number;
+  station: WaterStation;
 };
 
-const alerts: FloodAlert[] = [
-  {
-    id: "FW-102",
-    severity: "critical",
-    title: "Moei River overflow",
-    district: "Mae Sot",
-    detail: "Water is above the evacuation trigger at station MS-04.",
-    time: "8 min ago",
-    level: "6.42 m",
-    delta: "+0.28 m",
-    people: 860,
-    x: 42,
-    y: 48,
-  },
-  {
-    id: "FW-098",
-    severity: "critical",
-    title: "Creek overtopping",
-    district: "Mae Ramat",
-    detail: "Low-lying communities near the Moei tributaries are affected.",
-    time: "19 min ago",
-    level: "5.91 m",
-    delta: "+0.16 m",
-    people: 510,
-    x: 45,
-    y: 30,
-  },
-  {
-    id: "FW-091",
-    severity: "warning",
-    title: "Rapid runoff rise",
-    district: "Phop Phra",
-    detail: "Mountain runoff is forecast to reach the warning threshold within 2 hours.",
-    time: "34 min ago",
-    level: "4.78 m",
-    delta: "+0.21 m",
-    people: 430,
-    x: 46,
-    y: 65,
-  },
-  {
-    id: "FW-087",
-    severity: "warning",
-    title: "Flash flood and road closure",
-    district: "Umphang",
-    detail: "Local access roads are closed at three low-water crossings.",
-    time: "51 min ago",
-    level: "3.64 m",
-    delta: "+0.12 m",
-    people: 280,
-    x: 49,
-    y: 83,
-  },
-  {
-    id: "FW-079",
-    severity: "watch",
-    title: "Ping River rainfall watch",
-    district: "Ban Tak",
-    detail: "88 mm is forecast across the upper catchment in 6 hours.",
-    time: "1 hr ago",
-    level: "4.11 m",
-    delta: "+0.05 m",
-    people: 380,
-    x: 64,
-    y: 35,
-  },
-];
-
-const levelReadings = [42, 46, 49, 52, 57, 61, 66, 71, 76, 81, 86, 90];
-const rainReadings = [10, 18, 12, 26, 36, 22, 44, 51, 41, 62, 54, 68];
-
-const severityLabel: Record<Severity, string> = {
-  critical: "Critical",
-  warning: "Warning",
-  watch: "Watch",
-};
-
-const districts = [
-  { name: "Mae Sot", risk: "critical", reading: "6.42 m", trend: "Rising", action: "Evacuating" },
-  { name: "Mae Ramat", risk: "critical", reading: "5.91 m", trend: "Rising", action: "Response active" },
-  { name: "Phop Phra", risk: "warning", reading: "4.78 m", trend: "Rising", action: "Preparing shelters" },
-  { name: "Umphang", risk: "warning", reading: "3.64 m", trend: "Rising", action: "Road teams staged" },
-  { name: "Ban Tak", risk: "watch", reading: "4.11 m", trend: "Stable", action: "Monitoring" },
-  { name: "Tha Song Yang", risk: "watch", reading: "4.02 m", trend: "Stable", action: "Monitoring" },
-  { name: "Mueang Tak", risk: "normal", reading: "3.36 m", trend: "Stable", action: "Routine watch" },
-  { name: "Sam Ngao", risk: "normal", reading: "69%", trend: "Reservoir", action: "Routine watch" },
-  { name: "Wang Chao", risk: "normal", reading: "2.88 m", trend: "Stable", action: "Routine watch" },
+const districtDefinitions = [
+  { name: "Mueang Tak", apiName: "Mueang Tak District" },
+  { name: "Ban Tak", apiName: "Ban Tak District" },
+  { name: "Sam Ngao", apiName: "Sam Ngao District" },
+  { name: "Mae Ramat", apiName: "Mae Ramat District" },
+  { name: "Tha Song Yang", apiName: "Tha Song Yang District" },
+  { name: "Mae Sot", apiName: "Mae Sot District" },
+  { name: "Phop Phra", apiName: "Phop Phra District" },
+  { name: "Umphang", apiName: "Umphang District" },
+  { name: "Wang Chao", apiName: "Wang Chao District" },
 ] as const;
 
-const districtRiskLabel = {
-  critical: "Critical",
-  warning: "Warning",
-  watch: "Watch",
-  normal: "Normal",
-};
+function mapPosition(latitude: number, longitude: number) {
+  const x = Math.min(90, Math.max(10, ((longitude - 97.75) / (99.6 - 97.75)) * 100));
+  const y = Math.min(90, Math.max(10, (1 - (latitude - 14.85) / (18 - 14.85)) * 100));
+  return { x, y };
+}
+
+function formatFeedTime(value?: string | null) {
+  if (!value) return "Not reported";
+  if (/^\d{4}-\d{2}-\d{2}/.test(value)) return value.replace("T", " ").slice(0, 16);
+  return value;
+}
+
+function levelLabel(level: number) {
+  if (level >= 5) return "Level 5";
+  if (level >= 4) return "Level 4";
+  if (level >= 3) return "Level 3";
+  if (level > 0) return `Level ${level}`;
+  return "No level";
+}
 
 export default function Home() {
+  const [data, setData] = useState<GovernmentData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [severity, setSeverity] = useState<"all" | Severity>("all");
   const [query, setQuery] = useState("");
   const [mapLayer, setMapLayer] = useState<"warnings" | "rainfall" | "gauges">("warnings");
-  const [selected, setSelected] = useState<FloodAlert | null>(alerts[0]);
-  const [drawerAlert, setDrawerAlert] = useState<FloodAlert | null>(null);
-  const [acknowledged, setAcknowledged] = useState<Set<string>>(new Set());
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [drawerId, setDrawerId] = useState<string | null>(null);
   const [bannerVisible, setBannerVisible] = useState(true);
-  const [lastUpdated, setLastUpdated] = useState("10:42");
+
+  const loadGovernmentData = useCallback(async () => {
+    setLoading(true);
+    setLoadError(false);
+    try {
+      const response = await fetch("/api/government-data", { cache: "no-store" });
+      if (!response.ok) throw new Error("Government feed request failed");
+      const nextData = await response.json() as GovernmentData;
+      setData(nextData);
+    } catch {
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadGovernmentData();
+  }, [loadGovernmentData]);
+
+  const alerts = useMemo<LiveAlert[]>(() => {
+    return (data?.water?.stations ?? [])
+      .filter((station) => station.situationLevel >= 4)
+      .map((station) => {
+        const position = mapPosition(station.latitude, station.longitude);
+        const change = station.levelMsl - station.previousLevelMsl;
+        return {
+          id: station.code,
+          severity: station.situationLevel >= 5 ? "critical" : "warning",
+          title: station.situationLevel >= 5 ? "Very high water situation" : "High water situation",
+          district: station.district.replace(" District", ""),
+          detail: station.bankDistanceM >= 0
+            ? `${station.bankDistanceM.toFixed(2)} m below the reported bank level`
+            : `${Math.abs(station.bankDistanceM).toFixed(2)} m above the reported bank level`,
+          time: formatFeedTime(station.observedAt),
+          level: `${station.levelMsl.toFixed(2)} m MSL`,
+          delta: `${change >= 0 ? "+" : ""}${change.toFixed(2)} m`,
+          x: position.x,
+          y: position.y,
+          station,
+        };
+      });
+  }, [data]);
+
+  const selected = alerts.find((alert) => alert.id === selectedId) ?? alerts[0] ?? null;
+  const drawerAlert = alerts.find((alert) => alert.id === drawerId) ?? null;
 
   const filteredAlerts = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     return alerts.filter((alert) => {
       const severityMatch = severity === "all" || alert.severity === severity;
-      const searchMatch =
-        !normalized ||
-        `${alert.title} ${alert.district} ${alert.id}`.toLowerCase().includes(normalized);
+      const searchMatch = !normalized || `${alert.title} ${alert.district} ${alert.id}`.toLowerCase().includes(normalized);
       return severityMatch && searchMatch;
     });
-  }, [query, severity]);
+  }, [alerts, query, severity]);
 
-  const acknowledge = (id: string) => {
-    setAcknowledged((current) => new Set(current).add(id));
-  };
+  const districtRows = useMemo(() => {
+    const waterStations = data?.water?.stations ?? [];
+    const rainStations = data?.water?.rainfallStations ?? [];
+    return districtDefinitions.map((district) => {
+      const districtWater = waterStations.filter((station) => station.district === district.apiName);
+      const districtRain = rainStations.filter((station) => station.district === district.apiName);
+      const maximumLevel = districtWater.reduce((maximum, station) => Math.max(maximum, station.situationLevel), 0);
+      const maximumRain = districtRain.reduce((maximum, station) => Math.max(maximum, station.rainfall24hMm), 0);
+      return { ...district, gaugeCount: districtWater.length, rainCount: districtRain.length, maximumLevel, maximumRain };
+    });
+  }, [data]);
 
-  const refresh = () => {
-    const now = new Date();
-    setLastUpdated(now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
-  };
+  const connectedCount = data?.sources.filter((source) => source.status === "connected").length ?? 0;
+  const maximumRainStation = data?.water?.rainfallStations?.[0] ?? null;
 
   return (
     <main className="app-shell">
@@ -179,77 +247,87 @@ export default function Home() {
 
         <nav className="primary-nav" aria-label="Primary navigation">
           <a className="active" href="#overview">Overview</a>
-          <a href="#alerts">Warnings <span className="nav-count">5</span></a>
+          <a href="#alerts">Water flags <span className="nav-count">{alerts.length}</span></a>
           <a href="#districts">Districts</a>
-          <a href="#telemetry">River levels</a>
+          <a href="#sources">Sources</a>
         </nav>
 
         <div className="topbar-actions">
-          <div className="system-state" aria-label="Monitoring systems online">
-            <span className="live-dot" />
-            <span>Systems online</span>
+          <div className="system-state" aria-label={`${connectedCount} of 4 official sources connected`}>
+            <span className={connectedCount === 4 ? "live-dot" : "live-dot partial"} />
+            <span>{connectedCount}/4 official sources</span>
           </div>
-          <button className="icon-button notification-button" aria-label="Open notifications" title="Notifications">
+          <button className="icon-button notification-button" aria-label="Open data notices" title="Data notices">
             <Bell size={19} />
-            <span className="notification-dot">3</span>
+            {alerts.length > 0 && <span className="notification-dot">{alerts.length}</span>}
           </button>
-          <div className="operator-avatar" aria-label="Operations user">OP</div>
+          <div className="operator-avatar" aria-label="Tak Province">TAK</div>
         </div>
       </header>
 
       <div className="page-content" id="overview">
         <div className="page-heading">
           <div>
-            <p className="eyebrow">TAK PROVINCE</p>
-            <h1>Tak flood operations</h1>
+            <p className="eyebrow">TAK PROVINCE - OFFICIAL GOVERNMENT FEEDS</p>
+            <h1>Tak flood monitoring</h1>
             <p className="heading-meta">
-              <span>Friday, 10 July 2026</span>
+              <span>Generated {data ? new Date(data.generatedAt).toLocaleString() : "when feeds respond"}</span>
               <span className="meta-separator" />
-              <button className="refresh-button" onClick={refresh} type="button">
-                <RefreshCw size={14} /> Updated {lastUpdated}
-              </button>
-              <span className="demo-badge">DEMO DATA</span>
+              <span className="official-badge">NO DEMO READINGS</span>
             </p>
           </div>
-          <button className="dispatch-button" type="button" onClick={() => setDrawerAlert(alerts[0])}>
-            <Siren size={18} /> Open response plan
+          <button className="dispatch-button" type="button" onClick={() => void loadGovernmentData()} disabled={loading}>
+            <RefreshCw className={loading ? "spinning" : ""} size={18} /> {loading ? "Refreshing" : "Refresh official data"}
           </button>
         </div>
 
-        {bannerVisible && (
-          <section className="critical-banner" aria-label="Critical warning">
+        {loading && (
+          <section className="feed-banner neutral" aria-live="polite">
+            <RefreshCw className="spinning" size={20} />
+            <div><strong>Loading official government feeds</strong><span>TMD, ThaiWater, DRR, and DDPM are being checked independently.</span></div>
+          </section>
+        )}
+
+        {!loading && loadError && (
+          <section className="feed-banner unavailable" role="alert">
+            <TriangleAlert size={20} />
+            <div><strong>Official feeds could not be reached</strong><span>No cached demonstration values are being shown. Refresh to try again.</span></div>
+          </section>
+        )}
+
+        {!loading && !loadError && alerts.length > 0 && bannerVisible && (
+          <section className="critical-banner high-banner" aria-label="Official water level notice">
             <div className="critical-icon"><TriangleAlert size={21} /></div>
             <div className="critical-copy">
-              <strong>Evacuation trigger reached in Mae Sot</strong>
-              <span>The Moei River at MS-04 is 0.42 m above the critical threshold. Move Mae Pa and Tha Sai Luat residents to shelters.</span>
+              <strong>{alerts.length} Tak station{alerts.length === 1 ? "" : "s"} returned ThaiWater situation level 4 or higher</strong>
+              <span>This is a feed-based monitoring flag, not an evacuation order. Confirm the latest agency bulletin before field action.</span>
             </div>
             <div className="banner-actions">
-              <button type="button" onClick={() => { acknowledge("banner"); setBannerVisible(false); }}>
-                <Check size={16} /> Acknowledge
-              </button>
-              <button className="banner-close" type="button" aria-label="Dismiss warning" title="Dismiss" onClick={() => setBannerVisible(false)}>
-                <X size={18} />
-              </button>
+              <a className="source-link-button" href={data?.water?.sourceUrl} target="_blank" rel="noreferrer">Open ThaiWater <ExternalLink size={14} /></a>
+              <button className="banner-close" type="button" aria-label="Dismiss notice" title="Dismiss" onClick={() => setBannerVisible(false)}><X size={18} /></button>
             </div>
           </section>
         )}
 
+        {!loading && !loadError && alerts.length === 0 && (
+          <section className="feed-banner connected">
+            <CheckCircle2 size={20} />
+            <div><strong>No level 4-5 Tak water stations returned</strong><span>This is not an all-clear. Continue checking TMD, ThaiWater, DDPM, and local authority notices.</span></div>
+          </section>
+        )}
+
         <section className="operations-grid">
-          <div className="map-panel" aria-label="Flood warning map">
+          <div className="map-panel" aria-label="Tak official monitoring map">
             <div className="map-toolbar">
-              {(["warnings", "rainfall", "gauges"] as const).map((layer) => (
-                <button
-                  className={mapLayer === layer ? "active" : ""}
-                  key={layer}
-                  type="button"
-                  onClick={() => setMapLayer(layer)}
-                >
-                  {layer === "warnings" && <ShieldAlert size={15} />}
-                  {layer === "rainfall" && <CloudRain size={15} />}
-                  {layer === "gauges" && <Gauge size={15} />}
-                  {layer[0].toUpperCase() + layer.slice(1)}
-                </button>
-              ))}
+              <button className={mapLayer === "warnings" ? "active" : ""} type="button" onClick={() => setMapLayer("warnings")}>
+                <ShieldAlert size={15} /> Water flags
+              </button>
+              <button className={mapLayer === "rainfall" ? "active" : ""} type="button" onClick={() => setMapLayer("rainfall")}>
+                <CloudRain size={15} /> Rainfall
+              </button>
+              <button className={mapLayer === "gauges" ? "active" : ""} type="button" onClick={() => setMapLayer("gauges")}>
+                <Gauge size={15} /> All gauges
+              </button>
             </div>
 
             <div className="map-canvas">
@@ -260,39 +338,40 @@ export default function Home() {
               </div>
               <div className="map-wash" aria-hidden="true" />
 
-              {mapLayer === "warnings" && (
-                <>
-                  <span className="risk-zone risk-zone-critical" aria-hidden="true" />
-                  <span className="risk-zone risk-zone-warning" aria-hidden="true" />
-                </>
-              )}
-              {mapLayer === "rainfall" && (
-                <div className="rain-cells" aria-hidden="true">
-                  <span /><span /><span /><span /><span />
-                </div>
-              )}
-              {mapLayer === "gauges" && (
-                <div className="gauge-markers" aria-hidden="true">
-                  <span style={{ left: "20%", top: "34%" }}>4.2</span>
-                  <span style={{ left: "43%", top: "55%" }}>5.8</span>
-                  <span style={{ left: "67%", top: "40%" }}>5.1</span>
-                  <span style={{ left: "77%", top: "68%" }}>3.9</span>
-                </div>
-              )}
-
               {mapLayer === "warnings" && alerts.map((alert) => (
                 <button
                   className={`map-marker ${alert.severity} ${selected?.id === alert.id ? "selected" : ""}`}
                   key={alert.id}
                   style={{ left: `${alert.x}%`, top: `${alert.y}%` }}
                   type="button"
-                  aria-label={`${severityLabel[alert.severity]} alert in ${alert.district}`}
-                  onClick={() => setSelected(alert)}
+                  aria-label={`${alert.title} at ${alert.station.name}`}
+                  onClick={() => setSelectedId(alert.id)}
                 >
-                  <MapPin size={17} fill="currentColor" />
-                  <span>{alert.district}</span>
+                  <MapPin size={17} fill="currentColor" /><span>{alert.district}</span>
                 </button>
               ))}
+
+              {mapLayer === "rainfall" && (data?.water?.rainfallStations ?? []).slice(0, 20).map((station) => {
+                const position = mapPosition(station.latitude, station.longitude);
+                return (
+                  <button className="map-marker rainfall" key={station.id} style={{ left: `${position.x}%`, top: `${position.y}%` }} type="button" title={`${station.rainfall24hMm} mm in 24h`}>
+                    <CloudRain size={16} /><span>{station.rainfall24hMm} mm</span>
+                  </button>
+                );
+              })}
+
+              {mapLayer === "gauges" && (data?.water?.stations ?? []).map((station) => {
+                const position = mapPosition(station.latitude, station.longitude);
+                return (
+                  <button className={`map-marker ${station.situationLevel >= 5 ? "critical" : station.situationLevel >= 4 ? "warning" : "watch"}`} key={station.id} style={{ left: `${position.x}%`, top: `${position.y}%` }} type="button" title={`${station.name}: ${levelLabel(station.situationLevel)}`}>
+                    <Gauge size={16} /><span>{station.name}</span>
+                  </button>
+                );
+              })}
+
+              {mapLayer === "warnings" && !loading && alerts.length === 0 && (
+                <div className="map-empty"><CheckCircle2 size={22} /><strong>No level 4-5 stations</strong><span>Based on the latest ThaiWater response.</span></div>
+              )}
 
               <div className="map-controls">
                 <button type="button" aria-label="Zoom in" title="Zoom in"><ZoomIn size={18} /></button>
@@ -302,22 +381,17 @@ export default function Home() {
 
               {selected && mapLayer === "warnings" && (
                 <article className="map-callout">
-                  <div className="callout-heading">
-                    <span className={`severity-pill ${selected.severity}`}>{severityLabel[selected.severity]}</span>
-                    <span>{selected.id}</span>
-                  </div>
-                  <strong>{selected.title}</strong>
-                  <p>{selected.district} - {selected.level} <b>{selected.delta}</b></p>
-                  <button type="button" onClick={() => setDrawerAlert(selected)}>
-                    View details <ChevronRight size={15} />
-                  </button>
+                  <div className="callout-heading"><span className={`severity-pill ${selected.severity}`}>{levelLabel(selected.station.situationLevel)}</span><span>{selected.id}</span></div>
+                  <strong>{selected.station.name}</strong>
+                  <p>{selected.district} - {selected.level}</p>
+                  <button type="button" onClick={() => setDrawerId(selected.id)}>View source details <ChevronRight size={15} /></button>
                 </article>
               )}
 
               <div className="map-legend">
-                <span><i className="legend-dot critical" /> Critical</span>
-                <span><i className="legend-dot warning" /> Warning</span>
-                <span><i className="legend-dot watch" /> Watch</span>
+                <span><i className="legend-dot critical" /> Level 5</span>
+                <span><i className="legend-dot warning" /> Level 4</span>
+                <span><i className="legend-dot watch" /> Level 1-3</span>
               </div>
               <a className="map-credit" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">(c) OpenStreetMap</a>
             </div>
@@ -325,191 +399,158 @@ export default function Home() {
 
           <aside className="alerts-panel" id="alerts">
             <div className="panel-heading">
-              <div>
-                <span className="panel-kicker">ACTIVE INCIDENTS</span>
-                <h2>Warnings <span>5</span></h2>
-              </div>
-              <button className="icon-button" type="button" aria-label="Alert options" title="Alert options">
-                <Layers3 size={18} />
-              </button>
+              <div><span className="panel-kicker">THAIWATER LIVE FEED</span><h2>High water flags <span>{alerts.length}</span></h2></div>
+              <a className="icon-button" href={data?.water?.sourceUrl ?? "https://www.thaiwater.net/"} target="_blank" rel="noreferrer" aria-label="Open ThaiWater" title="Open ThaiWater"><ExternalLink size={18} /></a>
             </div>
 
-            <label className="search-field">
-              <Search size={16} />
-              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search location or ID" />
-            </label>
+            <label className="search-field"><Search size={16} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search station or district" /></label>
 
-            <div className="severity-tabs" aria-label="Filter alerts">
-              {(["all", "critical", "warning", "watch"] as const).map((item) => (
-                <button key={item} type="button" className={severity === item ? "active" : ""} onClick={() => setSeverity(item)}>
-                  {item === "all" ? "All" : severityLabel[item]}
-                </button>
-              ))}
+            <div className="severity-tabs compact" aria-label="Filter water flags">
+              <button type="button" className={severity === "all" ? "active" : ""} onClick={() => setSeverity("all")}>All</button>
+              <button type="button" className={severity === "critical" ? "active" : ""} onClick={() => setSeverity("critical")}>Level 5</button>
+              <button type="button" className={severity === "warning" ? "active" : ""} onClick={() => setSeverity("warning")}>Level 4</button>
             </div>
 
-            <div className="alert-list">
+            <div className="alert-list live-list">
               {filteredAlerts.map((alert) => (
                 <article className={`alert-row ${selected?.id === alert.id ? "selected" : ""}`} key={alert.id}>
-                  <button className="alert-main" type="button" onClick={() => { setSelected(alert); setDrawerAlert(alert); }}>
+                  <button className="alert-main" type="button" onClick={() => { setSelectedId(alert.id); setDrawerId(alert.id); }}>
                     <span className={`alert-indicator ${alert.severity}`} />
                     <span className="alert-content">
-                      <span className="alert-topline">
-                        <b>{alert.district}</b>
-                        <small>{alert.time}</small>
-                      </span>
-                      <strong>{alert.title}</strong>
+                      <span className="alert-topline"><b>{alert.station.name}</b><small>{alert.time}</small></span>
+                      <strong>{alert.district} - {levelLabel(alert.station.situationLevel)}</strong>
                       <span className="alert-reading"><Gauge size={14} /> {alert.level} <em>{alert.delta}</em></span>
                     </span>
                     <ChevronRight className="row-chevron" size={17} />
                   </button>
-                  <button
-                    className={`ack-button ${acknowledged.has(alert.id) ? "done" : ""}`}
-                    type="button"
-                    aria-label={acknowledged.has(alert.id) ? `${alert.id} acknowledged` : `Acknowledge ${alert.id}`}
-                    title="Acknowledge"
-                    onClick={() => acknowledge(alert.id)}
-                  >
-                    {acknowledged.has(alert.id) ? <CheckCircle2 size={16} /> : <BellRing size={16} />}
-                  </button>
                 </article>
               ))}
-              {filteredAlerts.length === 0 && <p className="empty-state">No warnings match this filter.</p>}
+              {!loading && filteredAlerts.length === 0 && <p className="empty-state">No official water flags match this filter.</p>}
+            </div>
+
+            <div className="weather-summary">
+              <div className="weather-summary-heading"><span>TMD observations</span><small>{data?.weather?.stations.length ?? 0} Tak stations</small></div>
+              {(data?.weather?.stations ?? []).slice(0, 3).map((station) => (
+                <div className="weather-row" key={station.code}>
+                  <span><b>{station.name}</b><small>{formatFeedTime(station.observedAt)}</small></span>
+                  <span><Thermometer size={13} /> {station.temperatureC.toFixed(1)} C</span>
+                  <span><CloudRain size={13} /> {station.rainfall24hMm.toFixed(1)} mm</span>
+                </div>
+              ))}
+              {!data?.weather && !loading && <p className="source-unavailable-copy">TMD feed unavailable.</p>}
             </div>
           </aside>
         </section>
 
-        <section className="metric-strip" aria-label="Flood summary">
-          <div className="metric">
-            <span className="metric-icon red"><ShieldAlert size={19} /></span>
-            <span><small>ACTIVE WARNINGS</small><strong>5</strong><em className="up">+1 today</em></span>
-          </div>
-          <div className="metric">
-            <span className="metric-icon gold"><UsersRound size={19} /></span>
-            <span><small>PEOPLE EXPOSED</small><strong>2,460</strong><em>5 districts</em></span>
-          </div>
-          <div className="metric">
-            <span className="metric-icon teal"><Map size={19} /></span>
-            <span><small>DISTRICTS MONITORED</small><strong>9 / 9</strong><em className="normal">Full coverage</em></span>
-          </div>
-          <div className="metric">
-            <span className="metric-icon blue"><Route size={19} /></span>
-            <span><small>ROAD DISRUPTIONS</small><strong>7</strong><em>2 major routes</em></span>
-          </div>
+        <section className="metric-strip" aria-label="Official flood monitoring summary">
+          <div className="metric"><span className="metric-icon red"><ShieldAlert size={19} /></span><span><small>WATER LEVEL FLAGS</small><strong>{data?.water?.flaggedCount ?? "-"}</strong><em>ThaiWater level 4-5</em></span></div>
+          <div className="metric"><span className="metric-icon gold"><CloudRain size={19} /></span><span><small>MAXIMUM RAIN 24H</small><strong>{maximumRainStation ? `${maximumRainStation.rainfall24hMm.toFixed(1)} mm` : "-"}</strong><em>{maximumRainStation?.name ?? "No feed"}</em></span></div>
+          <div className="metric"><span className="metric-icon teal"><Gauge size={19} /></span><span><small>TAK WATER GAUGES</small><strong>{data?.water?.stations.length ?? "-"}</strong><em>{formatFeedTime(data?.water?.observedAt)}</em></span></div>
+          <div className="metric"><span className="metric-icon blue"><Building2 size={19} /></span><span><small>DDPM SHELTER RECORDS</small><strong>{data?.ddpm?.shelterCount ?? "-"}</strong><em>Dataset: Aug 2024</em></span></div>
+        </section>
+
+        <section className="source-status-strip" id="sources" aria-label="Official source status">
+          <div className="source-title"><Database size={18} /><span><strong>Official sources</strong><small>Each feed is checked independently</small></span></div>
+          {(data?.sources ?? []).map((source) => (
+            <a className="source-item" href={source.url} target="_blank" rel="noreferrer" key={source.id}>
+              <span className={`source-state ${source.status}`} />
+              <span>
+                <strong>{source.shortName}</strong>
+                <small>
+                  {source.mode}
+                  {source.id === "tmd" && data?.weather ? ` - ${data.weather.stations.length} Tak stations` : ""}
+                  {source.id === "thaiwater" && data?.water ? ` - ${data.water.stations.length} Tak gauges` : ""}
+                  {source.id === "roads" && data?.roads ? ` - ${data.roads.recordCount} Tak archive records` : ""}
+                  {source.id === "ddpm" && data?.ddpm ? ` - ${data.ddpm.shelterCount} Tak shelter records` : ""}
+                </small>
+              </span>
+              <ExternalLink size={14} />
+            </a>
+          ))}
         </section>
 
         <section className="lower-grid">
           <article className="telemetry-panel" id="telemetry">
             <div className="section-heading">
-              <div>
-                <span className="panel-kicker">STATION MS-04 - MAE SOT</span>
-                <h2>Moei River level</h2>
-              </div>
-              <div className="station-reading">
-                <span>Current</span>
-                <strong>6.42 m</strong>
-                <em>+0.28 m / hr</em>
-              </div>
+              <div><span className="panel-kicker">LATEST THAIWATER RESPONSE</span><h2>Tak water gauges</h2></div>
+              <span className="coverage-count">{data?.water?.stations.length ?? 0} stations</span>
             </div>
 
-            <div className="chart-key">
-              <span><i className="key-level" /> River level</span>
-              <span><i className="key-rain" /> Rainfall</span>
-              <span className="threshold-label"><i /> Critical 6.00 m</span>
-            </div>
-
-            <div className="telemetry-chart" aria-label="Moei River levels rising from 4.3 to 6.42 metres over twelve hours">
-              <span className="chart-gridline line-1"><b>6.5 m</b></span>
-              <span className="chart-gridline line-2"><b>5.5 m</b></span>
-              <span className="chart-gridline line-3"><b>4.5 m</b></span>
-              <span className="critical-line"><b>Critical</b></span>
-              <div className="bar-series">
-                {levelReadings.map((level, index) => (
-                  <span className="level-column" key={index}>
-                    <i className="rain-bar" style={{ height: `${rainReadings[index]}%` }} />
-                    <i className={`level-bar ${index > 8 ? "critical" : ""}`} style={{ height: `${level}%` }} />
-                  </span>
-                ))}
-              </div>
-              <div className="chart-times"><span>23:00</span><span>03:00</span><span>07:00</span><span>10:00</span></div>
+            <div className="live-gauge-list">
+              <div className="live-gauge-row gauge-head"><span>Station</span><span>Level</span><span>Bank distance</span><span>Status</span></div>
+              {(data?.water?.stations ?? []).slice(0, 9).map((station) => (
+                <div className="live-gauge-row" key={station.id}>
+                  <span><b>{station.name}</b><small>{station.district.replace(" District", "")} - {formatFeedTime(station.observedAt)}</small></span>
+                  <span><b>{station.levelMsl.toFixed(2)} m</b><small>MSL</small></span>
+                  <span><b>{station.bankDistanceM.toFixed(2)} m</b><small>{station.bankDistanceText || "Reported difference"}</small></span>
+                  <span><i className={`risk-badge ${station.situationLevel >= 5 ? "critical" : station.situationLevel >= 4 ? "warning" : station.situationLevel >= 3 ? "watch" : "normal"}`}>{levelLabel(station.situationLevel)}</i></span>
+                </div>
+              ))}
+              {!data?.water && !loading && <p className="empty-state">ThaiWater feed unavailable. No substitute values are shown.</p>}
             </div>
           </article>
 
           <article className="district-panel" id="districts">
             <div className="section-heading">
-              <div>
-                <span className="panel-kicker">PROVINCE COVERAGE</span>
-                <h2>All district status</h2>
-              </div>
-              <span className="coverage-count">9 of 9 monitored</span>
+              <div><span className="panel-kicker">ALL TAK DISTRICTS</span><h2>Feed coverage</h2></div>
+              <span className="coverage-count">9 districts checked</span>
             </div>
 
-            <div className="district-table" role="table" aria-label="District readiness">
-              <div className="district-row table-head" role="row">
-                <span>District</span><span>Reading</span><span>Risk</span><span aria-hidden="true" />
-              </div>
-              {districts.map((district) => (
+            <div className="district-table" role="table" aria-label="Official feed coverage by Tak district">
+              <div className="district-row table-head" role="row"><span>District</span><span>Rain 24h</span><span>Water</span><span aria-hidden="true" /></div>
+              {districtRows.map((district) => (
                 <div className="district-row" role="row" key={district.name}>
-                  <span>
-                    <i className={`status-mark ${district.risk}`} />
-                    <b>{district.name}</b>
-                    <small>{district.action}</small>
-                  </span>
-                  <span>
-                    <b>{district.reading}</b>
-                    <small className={district.trend === "Rising" ? "rising" : "stable"}>{district.trend}</small>
-                  </span>
-                  <span><i className={`risk-badge ${district.risk}`}>{districtRiskLabel[district.risk]}</i></span>
-                  <button type="button" aria-label={`Open ${district.name} details`}><ChevronRight size={17} /></button>
+                  <span><i className={`status-mark ${district.maximumLevel >= 5 ? "critical" : district.maximumLevel >= 4 ? "warning" : district.gaugeCount ? "normal" : "unavailable"}`} /><b>{district.name}</b><small>{district.rainCount} rain / {district.gaugeCount} water stations</small></span>
+                  <span><b>{district.rainCount ? `${district.maximumRain.toFixed(1)} mm` : "-"}</b><small>{district.rainCount ? "Maximum" : "No station"}</small></span>
+                  <span><i className={`risk-badge ${district.maximumLevel >= 5 ? "critical" : district.maximumLevel >= 4 ? "warning" : district.maximumLevel >= 3 ? "watch" : district.gaugeCount ? "normal" : "unavailable"}`}>{district.gaugeCount ? levelLabel(district.maximumLevel) : "No gauge"}</i></span>
+                  <a href={data?.water?.sourceUrl ?? "https://www.thaiwater.net/"} target="_blank" rel="noreferrer" aria-label={`Open ThaiWater for ${district.name}`}><ExternalLink size={15} /></a>
                 </div>
               ))}
             </div>
           </article>
         </section>
+
+        <section className="data-caveat">
+          <Info size={17} />
+          <p><strong>Operational use:</strong> Feed values can be delayed, missing, or revised by the source agency. The DRR road dataset shown in source status is a 2022 archive, not current road passability. For current highway conditions use the official DOH hotline 1586 and agency bulletins.</p>
+        </section>
       </div>
 
       <nav className="mobile-nav" aria-label="Mobile navigation">
         <a className="active" href="#overview"><Map size={19} /><span>Overview</span></a>
-        <a href="#alerts"><BellRing size={19} /><span>Warnings</span></a>
-        <button type="button" onClick={() => setDrawerAlert(alerts[0])}><Siren size={20} /><span>Respond</span></button>
-        <a href="#telemetry"><Gauge size={19} /><span>Telemetry</span></a>
+        <a href="#alerts"><BellRing size={19} /><span>Water flags</span></a>
+        <a href="#districts"><Gauge size={19} /><span>Districts</span></a>
+        <a href="#sources"><Database size={19} /><span>Sources</span></a>
       </nav>
 
       {drawerAlert && (
-        <div className="drawer-backdrop" role="presentation" onMouseDown={(event) => {
-          if (event.currentTarget === event.target) setDrawerAlert(null);
-        }}>
+        <div className="drawer-backdrop" role="presentation" onMouseDown={(event) => { if (event.currentTarget === event.target) setDrawerId(null); }}>
           <aside className="incident-drawer" role="dialog" aria-modal="true" aria-labelledby="incident-title">
             <div className="drawer-header">
-              <div>
-                <span className={`severity-pill ${drawerAlert.severity}`}>{severityLabel[drawerAlert.severity]}</span>
-                <small>{drawerAlert.id} - {drawerAlert.time}</small>
-              </div>
-              <button className="icon-button" type="button" onClick={() => setDrawerAlert(null)} aria-label="Close incident details" title="Close">
-                <X size={20} />
-              </button>
+              <div><span className={`severity-pill ${drawerAlert.severity}`}>{levelLabel(drawerAlert.station.situationLevel)}</span><small>{drawerAlert.id} - {drawerAlert.time}</small></div>
+              <button className="icon-button" type="button" onClick={() => setDrawerId(null)} aria-label="Close station details" title="Close"><X size={20} /></button>
             </div>
-            <h2 id="incident-title">{drawerAlert.title}</h2>
+            <h2 id="incident-title">{drawerAlert.station.name}</h2>
             <p className="drawer-location"><MapPin size={16} /> {drawerAlert.district}, Tak Province</p>
-            <p className="drawer-summary">{drawerAlert.detail}</p>
+            <p className="drawer-summary">ThaiWater reports {drawerAlert.detail}. The situation level is supplied by the source feed and should be checked against the latest agency bulletin.</p>
 
             <div className="drawer-stats">
-              <span><small>River level</small><strong>{drawerAlert.level}</strong><em>{drawerAlert.delta}</em></span>
-              <span><small>People exposed</small><strong>{drawerAlert.people.toLocaleString()}</strong><em>Estimate</em></span>
+              <span><small>Water level</small><strong>{drawerAlert.level}</strong><em>{drawerAlert.delta} from previous</em></span>
+              <span><small>Bank distance</small><strong>{drawerAlert.station.bankDistanceM.toFixed(2)} m</strong><em>{drawerAlert.station.bankDistanceText || "Source value"}</em></span>
             </div>
 
-            <div className="response-section">
-              <div className="response-heading"><span>Response checklist</span><small>2 of 4 complete</small></div>
-              <label><input type="checkbox" defaultChecked /><span>Notify district command centre</span></label>
-              <label><input type="checkbox" defaultChecked /><span>Open evacuation shelters</span></label>
-              <label><input type="checkbox" /><span>Dispatch transport to Mae Pa and Tha Sai Luat</span></label>
-              <label><input type="checkbox" /><span>Confirm Route 12 traffic control</span></label>
+            <div className="official-detail-list">
+              <span><small>Source agency</small><b>{drawerAlert.station.agency}</b></span>
+              <span><small>Observed</small><b>{drawerAlert.time}</b></span>
+              <span><small>River</small><b>{drawerAlert.station.river}</b></span>
+              <span><small>Situation code</small><b>{drawerAlert.station.situationLevel}</b></span>
             </div>
+
+            <div className="data-caveat compact"><Info size={16} /><p>Do not issue evacuation or road-closure instructions from this dashboard alone. Confirm with DDPM and the responsible local authority.</p></div>
 
             <div className="drawer-actions">
-              <button className="primary" type="button" onClick={() => acknowledge(drawerAlert.id)}>
-                {acknowledged.has(drawerAlert.id) ? <><CheckCircle2 size={17} /> Acknowledged</> : <><BellRing size={17} /> Acknowledge warning</>}
-              </button>
-              <button type="button"><Navigation size={17} /> Dispatch team</button>
+              <a className="primary" href={data?.water?.sourceUrl ?? "https://www.thaiwater.net/"} target="_blank" rel="noreferrer"><ExternalLink size={17} /> Open ThaiWater</a>
+              <button type="button" onClick={() => setDrawerId(null)}>Close details</button>
             </div>
           </aside>
         </div>
