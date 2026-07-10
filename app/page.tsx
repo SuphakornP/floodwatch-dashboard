@@ -7,6 +7,7 @@ import {
   Building2,
   CheckCircle2,
   ChevronRight,
+  ClipboardCheck,
   CloudRain,
   Crosshair,
   Database,
@@ -255,6 +256,7 @@ const myTranslations: Record<string, string> = {
   "Official DOPA registered population": "DOPA တရားဝင် မှတ်ပုံတင်လူဦးရေ",
   "target-district population": "ပစ်မှတ်ခရိုင် လူဦးရေ",
   "Request Help": "အကူအညီတောင်းရန်",
+  "Damage Assessment": "ပျက်စီးမှုစိစစ်ချက်",
 };
 
 function formatFeedTime(value?: string | null, language: Language = "en") {
@@ -469,6 +471,7 @@ export default function Home() {
           <a href="#districts">{tr("Districts")}</a>
           <a href="#sources">{tr("Sources")}</a>
           <a href="/request-help">{tr("Request Help")}</a>
+          <a href="/damage-assessment">{tr("Damage Assessment")}</a>
         </nav>
 
         <div className="topbar-actions">
@@ -778,6 +781,7 @@ export default function Home() {
         <a href="#districts"><Gauge size={19} /><span>{tr("Districts")}</span></a>
         <a href="#sources"><Database size={19} /><span>{tr("Sources")}</span></a>
         <a className="request-help-nav" href="/request-help"><LifeBuoy size={19} /><span>{tr("Request Help")}</span></a>
+        <a className="damage-nav" href="/damage-assessment"><ClipboardCheck size={19} /><span>{tr("Damage Assessment")}</span></a>
       </nav>
 
       {drawerAlert && (

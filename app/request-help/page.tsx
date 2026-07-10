@@ -3,9 +3,11 @@
 import {
   ArrowLeft,
   CheckCircle2,
+  ClipboardCheck,
   Crosshair,
   HeartHandshake,
   Languages,
+  LifeBuoy,
   MapPin,
   Phone,
   Send,
@@ -131,6 +133,8 @@ const my: Record<string, string> = {
   "Keep your phone charged and answer unknown calls after submitting.": "ဖုန်းအားသွင်းထားပြီး တောင်းခံချက်ပို့ပြီးနောက် မသိသောဖုန်းခေါ်ဆိုမှုများကို ဖြေပါ။",
   "Information handling": "အချက်အလက် အသုံးပြုမှု",
   "Contact and location details are stored privately for response coordination. Do not include identity documents, bank details, or passwords.": "ဆက်သွယ်ရန်နှင့် တည်နေရာအချက်အလက်များကို တုံ့ပြန်ရေးညှိနှိုင်းမှုအတွက် သီးသန့်သိမ်းဆည်းသည်။ မှတ်ပုံတင်၊ ဘဏ်အချက်အလက် သို့မဟုတ် စကားဝှက် မထည့်ပါနှင့်။",
+  "Request help": "အကူအညီတောင်းရန်",
+  "Damage assessment": "ပျက်စီးဆုံးရှုံးမှု စိစစ်ချက်",
 };
 
 const districts = [
@@ -256,6 +260,7 @@ export default function RequestHelpPage() {
       </header>
 
       <div className="help-content">
+        <nav className="report-switch" aria-label="Reporting forms"><a className="active" href="/request-help"><LifeBuoy size={16} /> {tr("Request help")}</a><a href="/damage-assessment"><ClipboardCheck size={16} /> {tr("Damage assessment")}</a></nav>
         {reference ? (
           <section className="request-success" aria-live="polite">
             <span className="success-mark"><CheckCircle2 size={34} /></span>

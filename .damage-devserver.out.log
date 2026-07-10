@@ -1,0 +1,8 @@
+
+  vinext dev  (Vite 8.0.13)
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m3013[22m/[39m
+  [32m➜[39m  [1mDebug[22m:   [2m[33mhttp://localhost:[1m3013[22m[2m/__debug[39m[22m
+ POST /api/damage-assessments 201 in 52ms
+ POST /api/damage-assessments 400 in 14ms
+ GET /damage-assessment 200 in 1.0s (compile: 1783671833.2s, render: 983ms)

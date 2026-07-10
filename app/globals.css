@@ -2336,6 +2336,36 @@ html[lang="my"] .mobile-nav a {
   padding: 28px 26px 64px;
 }
 
+.report-switch {
+  background: #e8eeee;
+  border: 1px solid #d4dddd;
+  border-radius: 5px;
+  display: inline-grid;
+  gap: 3px;
+  grid-template-columns: 1fr 1fr;
+  margin-bottom: 18px;
+  padding: 3px;
+}
+
+.report-switch a {
+  align-items: center;
+  border-radius: 3px;
+  color: #607178;
+  display: inline-flex;
+  font-size: 9px;
+  font-weight: 750;
+  gap: 6px;
+  justify-content: center;
+  min-height: 32px;
+  padding: 0 11px;
+}
+
+.report-switch a.active {
+  background: white;
+  box-shadow: 0 1px 3px rgba(25, 47, 54, 0.12);
+  color: var(--teal-dark);
+}
+
 .help-intro {
   max-width: 760px;
   padding: 8px 0 22px;
@@ -2419,6 +2449,36 @@ html[lang="my"] .mobile-nav a {
 .emergency-callout > a b {
   font-size: 16px;
   line-height: 1;
+}
+
+.assessment-notice {
+  align-items: center;
+  background: #eef3f4;
+  border: 1px solid #d7e0e2;
+  border-left: 4px solid #657b82;
+  display: grid;
+  gap: 11px;
+  grid-template-columns: auto 1fr auto;
+  margin-bottom: 18px;
+  padding: 12px 14px;
+}
+
+.assessment-notice > svg { color: #5c737a; }
+.assessment-notice strong { color: var(--ink); font-size: 11px; }
+.assessment-notice p { color: var(--muted); font-size: 9px; line-height: 1.45; margin: 3px 0 0; }
+
+.assessment-notice a {
+  align-items: center;
+  background: white;
+  border: 1px solid #bac9cc;
+  border-radius: 4px;
+  color: var(--teal-dark);
+  display: inline-flex;
+  font-size: 9px;
+  font-weight: 750;
+  gap: 7px;
+  min-height: 36px;
+  padding: 0 11px;
 }
 
 .help-layout {
@@ -2514,7 +2574,8 @@ html[lang="my"] .mobile-nav a {
 .form-grid input,
 .form-grid select,
 .form-grid textarea,
-.details-field textarea {
+.details-field textarea,
+.details-field input {
   background: #fbfcfc;
   border: 1px solid #cbd5d7;
   border-radius: 4px;
@@ -2528,7 +2589,8 @@ html[lang="my"] .mobile-nav a {
 }
 
 .form-grid input,
-.form-grid select {
+.form-grid select,
+.details-field input {
   height: 39px;
 }
 
@@ -2541,7 +2603,8 @@ html[lang="my"] .mobile-nav a {
 .form-grid input:focus,
 .form-grid select:focus,
 .form-grid textarea:focus,
-.details-field textarea:focus {
+.details-field textarea:focus,
+.details-field input:focus {
   border-color: var(--teal);
   box-shadow: 0 0 0 3px rgba(31, 122, 115, 0.1);
   outline: 0;
@@ -2660,6 +2723,71 @@ html[lang="my"] .mobile-nav a {
   line-height: 1.4;
 }
 
+.damage-severity-options {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.damage-severity-options label {
+  align-items: flex-start;
+  border: 1px solid #d2dadc;
+  border-radius: 5px;
+  cursor: pointer;
+  display: flex;
+  gap: 7px;
+  min-height: 79px;
+  padding: 10px;
+}
+
+.damage-severity-options label.selected {
+  background: #f2f6f5;
+  border-color: #71888d;
+}
+
+.damage-severity-options label.selected.major,
+.damage-severity-options label.selected.destroyed {
+  background: var(--red-soft);
+  border-color: var(--red);
+}
+
+.damage-severity-options label.selected.moderate {
+  background: var(--amber-soft);
+  border-color: var(--amber);
+}
+
+.damage-severity-options input {
+  accent-color: var(--teal);
+  flex: 0 0 auto;
+  height: 15px;
+  margin: 0;
+  width: 15px;
+}
+
+.damage-severity-options label > span {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.damage-severity-options b { font-size: 9px; }
+.damage-severity-options small { color: var(--muted); font-size: 7px; line-height: 1.4; }
+.damage-access-grid { margin-top: 13px; }
+
+.subfield-heading {
+  color: var(--ink);
+  font-size: 10px;
+  margin: 17px 0 9px;
+}
+
+.hazard-options label.selected {
+  background: #fff4e6;
+  border-color: var(--amber);
+  color: #8b520d;
+}
+
+.evidence-field { margin-top: 13px; }
+
 .need-options {
   display: grid;
   gap: 8px;
@@ -2723,6 +2851,8 @@ html[lang="my"] .mobile-nav a {
   cursor: wait;
   opacity: 0.65;
 }
+
+.damage-submit { background: #8a5b13; }
 
 .honeypot {
   height: 0;
@@ -2928,7 +3058,7 @@ html[lang="my"] .mobile-nav a {
     border-top: 1px solid var(--line);
     bottom: 0;
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(6, 1fr);
     height: 66px;
     left: 0;
     padding: 0 7px;
@@ -2956,6 +3086,10 @@ html[lang="my"] .mobile-nav a {
 
   .mobile-nav a.request-help-nav {
     color: var(--red-dark);
+  }
+
+  .mobile-nav a.damage-nav {
+    color: #7d5914;
   }
 
   .mobile-nav button {
@@ -3271,8 +3405,23 @@ html[lang="my"] .mobile-nav a {
   .form-grid.two-column,
   .form-grid.three-column,
   .urgency-options,
+  .damage-severity-options,
   .need-options {
     grid-template-columns: 1fr;
+  }
+
+  .report-switch {
+    display: grid;
+    width: 100%;
+  }
+
+  .assessment-notice {
+    grid-template-columns: auto 1fr;
+  }
+
+  .assessment-notice a {
+    grid-column: 1 / -1;
+    justify-content: center;
   }
 
   .consent-row {
