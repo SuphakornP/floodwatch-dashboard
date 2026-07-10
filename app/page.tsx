@@ -48,67 +48,67 @@ const alerts: FloodAlert[] = [
   {
     id: "FW-102",
     severity: "critical",
-    title: "Chao Phraya overflow",
-    district: "Bang Pa-in",
-    detail: "Water is above the evacuation trigger at C.29A.",
+    title: "Moei River overflow",
+    district: "Mae Sot",
+    detail: "Water is above the evacuation trigger at station MS-04.",
     time: "8 min ago",
-    level: "5.84 m",
-    delta: "+0.31 m",
-    people: 1280,
-    x: 49,
-    y: 40,
+    level: "6.42 m",
+    delta: "+0.28 m",
+    people: 860,
+    x: 42,
+    y: 48,
   },
   {
     id: "FW-098",
     severity: "critical",
-    title: "Levee overtopping",
-    district: "Phra Nakhon Si Ayutthaya",
-    detail: "Low-lying communities east of the island are affected.",
+    title: "Creek overtopping",
+    district: "Mae Ramat",
+    detail: "Low-lying communities near the Moei tributaries are affected.",
     time: "19 min ago",
-    level: "5.61 m",
-    delta: "+0.18 m",
-    people: 940,
-    x: 61,
-    y: 50,
+    level: "5.91 m",
+    delta: "+0.16 m",
+    people: 510,
+    x: 45,
+    y: 30,
   },
   {
     id: "FW-091",
     severity: "warning",
-    title: "Rapid river rise",
-    district: "Bang Sai",
-    detail: "Forecast to reach the warning threshold within 2 hours.",
+    title: "Rapid runoff rise",
+    district: "Phop Phra",
+    detail: "Mountain runoff is forecast to reach the warning threshold within 2 hours.",
     time: "34 min ago",
-    level: "4.92 m",
-    delta: "+0.22 m",
-    people: 620,
-    x: 39,
-    y: 60,
+    level: "4.78 m",
+    delta: "+0.21 m",
+    people: 430,
+    x: 46,
+    y: 65,
   },
   {
     id: "FW-087",
     severity: "warning",
-    title: "Road inundation",
-    district: "Lat Bua Luang",
-    detail: "Route 340 frontage lanes are closed in both directions.",
+    title: "Flash flood and road closure",
+    district: "Umphang",
+    detail: "Local access roads are closed at three low-water crossings.",
     time: "51 min ago",
-    level: "4.47 m",
-    delta: "+0.09 m",
-    people: 540,
-    x: 28,
-    y: 48,
+    level: "3.64 m",
+    delta: "+0.12 m",
+    people: 280,
+    x: 49,
+    y: 83,
   },
   {
     id: "FW-079",
     severity: "watch",
-    title: "Heavy rainfall watch",
-    district: "Wang Noi",
-    detail: "96 mm is forecast across the upper catchment in 6 hours.",
+    title: "Ping River rainfall watch",
+    district: "Ban Tak",
+    detail: "88 mm is forecast across the upper catchment in 6 hours.",
     time: "1 hr ago",
-    level: "3.88 m",
-    delta: "+0.06 m",
-    people: 460,
-    x: 72,
-    y: 32,
+    level: "4.11 m",
+    delta: "+0.05 m",
+    people: 380,
+    x: 64,
+    y: 35,
   },
 ];
 
@@ -182,7 +182,7 @@ export default function Home() {
       <div className="page-content" id="overview">
         <div className="page-heading">
           <div>
-            <p className="eyebrow">LOWER CHAO PHRAYA BASIN</p>
+            <p className="eyebrow">TAK PROVINCE</p>
             <h1>Flood operations overview</h1>
             <p className="heading-meta">
               <span>Friday, 10 July 2026</span>
@@ -202,8 +202,8 @@ export default function Home() {
           <section className="critical-banner" aria-label="Critical warning">
             <div className="critical-icon"><TriangleAlert size={21} /></div>
             <div className="critical-copy">
-              <strong>Evacuation trigger reached in Bang Pa-in</strong>
-              <span>Water at C.29A is 0.34 m above the critical threshold. Move Zones 3 and 4 to high ground.</span>
+              <strong>Evacuation trigger reached in Mae Sot</strong>
+              <span>The Moei River at MS-04 is 0.42 m above the critical threshold. Move Mae Pa and Tha Sai Luat residents to shelters.</span>
             </div>
             <div className="banner-actions">
               <button type="button" onClick={() => { acknowledge("banner"); setBannerVisible(false); }}>
@@ -236,7 +236,7 @@ export default function Home() {
 
             <div className="map-canvas">
               <div className="map-tiles" aria-hidden="true">
-                {["198/117", "199/117", "200/117", "198/118", "199/118", "200/118"].map((tile) => (
+                {["197/115", "198/115", "199/115", "197/116", "198/116", "199/116"].map((tile) => (
                   <img key={tile} src={`https://tile.openstreetmap.org/8/${tile}.png`} alt="" />
                 ))}
               </div>
@@ -367,7 +367,7 @@ export default function Home() {
           </div>
           <div className="metric">
             <span className="metric-icon gold"><UsersRound size={19} /></span>
-            <span><small>PEOPLE EXPOSED</small><strong>3,840</strong><em>4 districts</em></span>
+            <span><small>PEOPLE EXPOSED</small><strong>2,460</strong><em>5 districts</em></span>
           </div>
           <div className="metric">
             <span className="metric-icon teal"><Activity size={19} /></span>
@@ -383,26 +383,26 @@ export default function Home() {
           <article className="telemetry-panel" id="telemetry">
             <div className="section-heading">
               <div>
-                <span className="panel-kicker">STATION C.29A · BANG PA-IN</span>
+                <span className="panel-kicker">STATION MS-04 · MAE SOT</span>
                 <h2>River level trend</h2>
               </div>
               <div className="station-reading">
                 <span>Current</span>
-                <strong>5.84 m</strong>
-                <em>+0.31 m / hr</em>
+                <strong>6.42 m</strong>
+                <em>+0.28 m / hr</em>
               </div>
             </div>
 
             <div className="chart-key">
               <span><i className="key-level" /> River level</span>
               <span><i className="key-rain" /> Rainfall</span>
-              <span className="threshold-label"><i /> Critical 5.50 m</span>
+              <span className="threshold-label"><i /> Critical 6.00 m</span>
             </div>
 
-            <div className="telemetry-chart" aria-label="River levels rising from 3.9 to 5.84 metres over twelve hours">
-              <span className="chart-gridline line-1"><b>6.0 m</b></span>
-              <span className="chart-gridline line-2"><b>5.0 m</b></span>
-              <span className="chart-gridline line-3"><b>4.0 m</b></span>
+            <div className="telemetry-chart" aria-label="Moei River levels rising from 4.3 to 6.42 metres over twelve hours">
+              <span className="chart-gridline line-1"><b>6.5 m</b></span>
+              <span className="chart-gridline line-2"><b>5.5 m</b></span>
+              <span className="chart-gridline line-3"><b>4.5 m</b></span>
               <span className="critical-line"><b>Critical</b></span>
               <div className="bar-series">
                 {levelReadings.map((level, index) => (
@@ -430,24 +430,24 @@ export default function Home() {
                 <span>District</span><span>River</span><span>Action</span>
               </div>
               <div className="district-row" role="row">
-                <span><i className="status-mark critical" /><b>Bang Pa-in</b><small>Evacuating</small></span>
-                <span><b>5.84 m</b><small className="rising">Rising</small></span>
-                <button type="button" aria-label="Open Bang Pa-in details"><ChevronRight size={17} /></button>
+                <span><i className="status-mark critical" /><b>Mae Sot</b><small>Evacuating</small></span>
+                <span><b>6.42 m</b><small className="rising">Rising</small></span>
+                <button type="button" aria-label="Open Mae Sot details"><ChevronRight size={17} /></button>
               </div>
               <div className="district-row" role="row">
-                <span><i className="status-mark critical" /><b>Ayutthaya</b><small>Response active</small></span>
-                <span><b>5.61 m</b><small className="rising">Rising</small></span>
-                <button type="button" aria-label="Open Ayutthaya details"><ChevronRight size={17} /></button>
+                <span><i className="status-mark critical" /><b>Mae Ramat</b><small>Response active</small></span>
+                <span><b>5.91 m</b><small className="rising">Rising</small></span>
+                <button type="button" aria-label="Open Mae Ramat details"><ChevronRight size={17} /></button>
               </div>
               <div className="district-row" role="row">
-                <span><i className="status-mark warning" /><b>Bang Sai</b><small>Preparing</small></span>
-                <span><b>4.92 m</b><small className="rising">Rising</small></span>
-                <button type="button" aria-label="Open Bang Sai details"><ChevronRight size={17} /></button>
+                <span><i className="status-mark warning" /><b>Phop Phra</b><small>Preparing</small></span>
+                <span><b>4.78 m</b><small className="rising">Rising</small></span>
+                <button type="button" aria-label="Open Phop Phra details"><ChevronRight size={17} /></button>
               </div>
               <div className="district-row" role="row">
-                <span><i className="status-mark watch" /><b>Wang Noi</b><small>Monitoring</small></span>
-                <span><b>3.88 m</b><small className="stable">Stable</small></span>
-                <button type="button" aria-label="Open Wang Noi details"><ChevronRight size={17} /></button>
+                <span><i className="status-mark watch" /><b>Ban Tak</b><small>Monitoring</small></span>
+                <span><b>4.11 m</b><small className="stable">Stable</small></span>
+                <button type="button" aria-label="Open Ban Tak details"><ChevronRight size={17} /></button>
               </div>
             </div>
           </article>
@@ -476,7 +476,7 @@ export default function Home() {
               </button>
             </div>
             <h2 id="incident-title">{drawerAlert.title}</h2>
-            <p className="drawer-location"><MapPin size={16} /> {drawerAlert.district}, Ayutthaya</p>
+            <p className="drawer-location"><MapPin size={16} /> {drawerAlert.district}, Tak Province</p>
             <p className="drawer-summary">{drawerAlert.detail}</p>
 
             <div className="drawer-stats">
@@ -488,8 +488,8 @@ export default function Home() {
               <div className="response-heading"><span>Response checklist</span><small>2 of 4 complete</small></div>
               <label><input type="checkbox" defaultChecked /><span>Notify district command centre</span></label>
               <label><input type="checkbox" defaultChecked /><span>Open evacuation shelters</span></label>
-              <label><input type="checkbox" /><span>Dispatch transport to Zones 3 and 4</span></label>
-              <label><input type="checkbox" /><span>Confirm Route 347 traffic control</span></label>
+              <label><input type="checkbox" /><span>Dispatch transport to Mae Pa and Tha Sai Luat</span></label>
+              <label><input type="checkbox" /><span>Confirm Route 12 traffic control</span></label>
             </div>
 
             <div className="drawer-actions">

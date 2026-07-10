@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Floodwatch | Flood Operations Dashboard",
-  description: "Flood warning operations dashboard for the Lower Chao Phraya Basin.",
+  description: "Flood warning operations dashboard for Tak Province, Thailand.",
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",
