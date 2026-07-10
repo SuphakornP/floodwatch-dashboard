@@ -17,16 +17,16 @@ import {
   MapPin,
   RefreshCw,
   Route,
+  Satellite,
   Search,
   ShieldAlert,
   Thermometer,
   TriangleAlert,
   Waves,
   X,
-  ZoomIn,
-  ZoomOut,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import InteractiveMap, { type BaseMap, type FloodMapPoint } from "./InteractiveMap";
 
 type Severity = "critical" | "warning";
 type Language = "en" | "my";
@@ -121,8 +121,6 @@ type LiveAlert = {
   time: string;
   level: string;
   delta: string;
-  x: number;
-  y: number;
   station: WaterStation;
 };
 
@@ -221,13 +219,11 @@ const myTranslations: Record<string, string> = {
   "Filter water flags": "ရေအဆင့် သတိပေးချက် စစ်ထုတ်ရန်",
   "Official feed coverage for the five target districts": "ပစ်မှတ်ခရိုင် ၅ ခုအတွက် တရားဝင်ဒေတာ လွှမ်းခြုံမှု",
   "Source value": "ရင်းမြစ်မှ တန်ဖိုး",
+  "Streets": "လမ်းမြေပုံ",
+  "Satellite": "ဂြိုဟ်တုမြေပုံ",
+  "Interactive monitoring map": "အပြန်အလှန် အသုံးပြုနိုင်သော စောင့်ကြည့်မြေပုံ",
+  "Map style": "မြေပုံပုံစံ",
 };
-
-function mapPosition(latitude: number, longitude: number) {
-  const x = Math.min(90, Math.max(10, ((longitude - 97.75) / (99.2 - 97.75)) * 100));
-  const y = Math.min(90, Math.max(10, (1 - (latitude - 15.75) / (17.85 - 15.75)) * 100));
-  return { x, y };
-}
 
 function formatFeedTime(value?: string | null, language: Language = "en") {
   if (!value) return language === "my" ? myTranslations["Not reported"] : "Not reported";
@@ -257,6 +253,7 @@ export default function Home() {
   const [severity, setSeverity] = useState<"all" | Severity>("all");
   const [query, setQuery] = useState("");
   const [mapLayer, setMapLayer] = useState<"warnings" | "rainfall" | "gauges">("warnings");
+  const [baseMap, setBaseMap] = useState<BaseMap>("streets");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [drawerId, setDrawerId] = useState<string | null>(null);
   const [bannerVisible, setBannerVisible] = useState(true);
@@ -296,7 +293,6 @@ export default function Home() {
     return (data?.water?.stations ?? [])
       .filter((station) => station.situationLevel >= 4)
       .map((station) => {
-        const position = mapPosition(station.latitude, station.longitude);
         const change = station.levelMsl - station.previousLevelMsl;
         return {
           id: station.code,
@@ -313,8 +309,6 @@ export default function Home() {
           time: formatFeedTime(station.observedAt, language),
           level: `${station.levelMsl.toFixed(2)} m MSL`,
           delta: `${change >= 0 ? "+" : ""}${change.toFixed(2)} m`,
-          x: position.x,
-          y: position.y,
           station,
         };
       });
@@ -346,6 +340,43 @@ export default function Home() {
 
   const connectedCount = data?.sources.filter((source) => source.status === "connected").length ?? 0;
   const maximumRainStation = data?.water?.rainfallStations?.[0] ?? null;
+  const mapPoints = useMemo<FloodMapPoint[]>(() => {
+    if (mapLayer === "warnings") {
+      return alerts.map((alert) => ({
+        id: alert.id,
+        latitude: alert.station.latitude,
+        longitude: alert.station.longitude,
+        label: alert.station.name,
+        district: alert.district,
+        value: `${alert.level} - ${levelLabel(alert.station.situationLevel, language)}`,
+        tone: alert.severity,
+        warningId: alert.id,
+      }));
+    }
+
+    if (mapLayer === "rainfall") {
+      return (data?.water?.rainfallStations ?? []).map((station) => ({
+        id: station.id,
+        latitude: station.latitude,
+        longitude: station.longitude,
+        label: station.name,
+        district: displayDistrictName(station.district, language),
+        value: language === "my" ? `၂၄ နာရီ မိုးရေ ${station.rainfall24hMm} mm` : `${station.rainfall24hMm} mm in 24h`,
+        tone: "rainfall",
+      }));
+    }
+
+    return (data?.water?.stations ?? []).map((station) => ({
+      id: station.code,
+      latitude: station.latitude,
+      longitude: station.longitude,
+      label: station.name,
+      district: displayDistrictName(station.district, language),
+      value: `${station.levelMsl.toFixed(2)} m MSL - ${levelLabel(station.situationLevel, language)}`,
+      tone: station.situationLevel >= 5 ? "critical" : station.situationLevel >= 4 ? "warning" : "watch",
+      warningId: station.situationLevel >= 4 ? station.code : undefined,
+    }));
+  }, [alerts, data, language, mapLayer]);
 
   return (
     <main className="app-shell">
@@ -434,65 +465,42 @@ export default function Home() {
         <section className="operations-grid">
           <div className="map-panel" aria-label={tr("Western Tak flood monitoring")}>
             <div className="map-toolbar">
-              <button className={mapLayer === "warnings" ? "active" : ""} type="button" onClick={() => setMapLayer("warnings")}>
-                <ShieldAlert size={15} /> {language === "my" ? "ရေသတိ" : "Water flags"}
-              </button>
-              <button className={mapLayer === "rainfall" ? "active" : ""} type="button" onClick={() => setMapLayer("rainfall")}>
-                <CloudRain size={15} /> {language === "my" ? "မိုးရေ" : "Rainfall"}
-              </button>
-              <button className={mapLayer === "gauges" ? "active" : ""} type="button" onClick={() => setMapLayer("gauges")}>
-                <Gauge size={15} /> {language === "my" ? "ရေတိုင်း" : "All gauges"}
-              </button>
+              <div className="map-data-layers">
+                <button className={mapLayer === "warnings" ? "active" : ""} type="button" onClick={() => setMapLayer("warnings")}>
+                  <ShieldAlert size={15} /> {language === "my" ? "ရေသတိ" : "Water flags"}
+                </button>
+                <button className={mapLayer === "rainfall" ? "active" : ""} type="button" onClick={() => setMapLayer("rainfall")}>
+                  <CloudRain size={15} /> {language === "my" ? "မိုးရေ" : "Rainfall"}
+                </button>
+                <button className={mapLayer === "gauges" ? "active" : ""} type="button" onClick={() => setMapLayer("gauges")}>
+                  <Gauge size={15} /> {language === "my" ? "ရေတိုင်း" : "All gauges"}
+                </button>
+              </div>
+              <div className="basemap-switch" role="group" aria-label={tr("Map style")}>
+                <button className={baseMap === "streets" ? "active" : ""} type="button" aria-pressed={baseMap === "streets"} onClick={() => setBaseMap("streets")}>
+                  <Map size={15} /> {tr("Streets")}
+                </button>
+                <button className={baseMap === "satellite" ? "active" : ""} type="button" aria-pressed={baseMap === "satellite"} onClick={() => setBaseMap("satellite")}>
+                  <Satellite size={15} /> {tr("Satellite")}
+                </button>
+              </div>
             </div>
 
             <div className="map-canvas">
-              <div className="map-tiles" aria-hidden="true">
-                {["197/114", "198/114", "199/114", "197/115", "198/115", "199/115"].map((tile) => (
-                  <img key={tile} src={`https://tile.openstreetmap.org/8/${tile}.png`} alt="" />
-                ))}
-              </div>
-              <div className="map-wash" aria-hidden="true" />
-
-              {mapLayer === "warnings" && alerts.map((alert) => (
-                <button
-                  className={`map-marker ${alert.severity} ${selected?.id === alert.id ? "selected" : ""}`}
-                  key={alert.id}
-                  style={{ left: `${alert.x}%`, top: `${alert.y}%` }}
-                  type="button"
-                  aria-label={language === "my" ? `${alert.station.name} တွင် ${alert.title}` : `${alert.title} at ${alert.station.name}`}
-                  onClick={() => setSelectedId(alert.id)}
-                >
-                  <MapPin size={17} fill="currentColor" /><span>{alert.district}</span>
-                </button>
-              ))}
-
-              {mapLayer === "rainfall" && (data?.water?.rainfallStations ?? []).slice(0, 20).map((station) => {
-                const position = mapPosition(station.latitude, station.longitude);
-                return (
-                  <button className="map-marker rainfall" key={station.id} style={{ left: `${position.x}%`, top: `${position.y}%` }} type="button" title={language === "my" ? `၂၄ နာရီ မိုးရေ ${station.rainfall24hMm} mm` : `${station.rainfall24hMm} mm in 24h`}>
-                    <CloudRain size={16} /><span>{station.rainfall24hMm} mm</span>
-                  </button>
-                );
-              })}
-
-              {mapLayer === "gauges" && (data?.water?.stations ?? []).map((station) => {
-                const position = mapPosition(station.latitude, station.longitude);
-                return (
-                  <button className={`map-marker ${station.situationLevel >= 5 ? "critical" : station.situationLevel >= 4 ? "warning" : "watch"}`} key={station.id} style={{ left: `${position.x}%`, top: `${position.y}%` }} type="button" title={`${station.name}: ${levelLabel(station.situationLevel, language)}`}>
-                    <Gauge size={16} /><span>{station.name}</span>
-                  </button>
-                );
-              })}
+              <InteractiveMap
+                baseMap={baseMap}
+                points={mapPoints}
+                selectedPointId={selected?.id ?? null}
+                ariaLabel={tr("Interactive monitoring map")}
+                zoomInLabel={tr("Zoom in")}
+                zoomOutLabel={tr("Zoom out")}
+                centerLabel={tr("Center map")}
+                onSelectPoint={(point) => { if (point.warningId) setSelectedId(point.warningId); }}
+              />
 
               {mapLayer === "warnings" && !loading && alerts.length === 0 && (
                 <div className="map-empty"><CheckCircle2 size={22} /><strong>{tr("No level 4-5 stations")}</strong><span>{tr("Based on the latest ThaiWater response.")}</span></div>
               )}
-
-              <div className="map-controls">
-                <button type="button" aria-label={tr("Zoom in")} title={tr("Zoom in")}><ZoomIn size={18} /></button>
-                <button type="button" aria-label={tr("Zoom out")} title={tr("Zoom out")}><ZoomOut size={18} /></button>
-                <button type="button" aria-label={tr("Center map")} title={tr("Center map")}><Crosshair size={18} /></button>
-              </div>
 
               {selected && mapLayer === "warnings" && (
                 <article className="map-callout">
@@ -508,7 +516,6 @@ export default function Home() {
                 <span><i className="legend-dot warning" /> {levelLabel(4, language)}</span>
                 <span><i className="legend-dot watch" /> {language === "my" ? "အဆင့် ၁-၃" : "Level 1-3"}</span>
               </div>
-              <a className="map-credit" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">(c) OpenStreetMap</a>
             </div>
           </div>
 
