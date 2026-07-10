@@ -22,7 +22,6 @@ import {
   ShieldAlert,
   Thermometer,
   TriangleAlert,
-  Waves,
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -381,8 +380,8 @@ export default function Home() {
   return (
     <main className="app-shell">
       <header className="topbar">
-        <a className="brand" href="#overview" aria-label={tr("Overview")}>
-          <span className="brand-mark"><Waves size={20} strokeWidth={2.4} /></span>
+        <a className="brand" href="#overview" aria-label={`Help Without Frontiers - ${tr("Overview")}`}>
+          <img className="brand-logo" src="/hwf-site-logo.png" alt="Help Without Frontiers" />
           <span>FLOODWATCH</span>
         </a>
 

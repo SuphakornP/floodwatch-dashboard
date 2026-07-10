@@ -82,15 +82,11 @@ a {
   justify-self: start;
 }
 
-.brand-mark {
-  align-items: center;
-  background: var(--teal);
-  border-radius: 5px;
-  color: white;
-  display: inline-flex;
-  height: 34px;
-  justify-content: center;
-  width: 34px;
+.brand-logo {
+  display: block;
+  height: 40px;
+  object-fit: contain;
+  width: 70px;
 }
 
 .primary-nav {
@@ -2079,9 +2075,9 @@ html[lang="my"] .mobile-nav a {
     padding: 0 14px;
   }
 
-  .brand-mark {
-    height: 31px;
-    width: 31px;
+  .brand-logo {
+    height: 34px;
+    width: 60px;
   }
 
   .topbar-actions {
