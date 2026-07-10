@@ -1,0 +1,8 @@
+
+  vinext dev  (Vite 8.0.13)
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m3012[22m/[39m
+  [32m➜[39m  [1mDebug[22m:   [2m[33mhttp://localhost:[1m3012[22m[2m/__debug[39m[22m
+ POST /api/help-requests 201 in 83ms
+ POST /api/help-requests 400 in 15ms
+ GET /request-help 200 in 948ms (compile: 1783671078.7s, render: 921ms)

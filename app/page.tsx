@@ -14,6 +14,7 @@ import {
   Gauge,
   Info,
   Languages,
+  LifeBuoy,
   Map,
   MapPin,
   RefreshCw,
@@ -253,6 +254,7 @@ const myTranslations: Record<string, string> = {
   "River level chart": "မြစ်ရေအဆင့်ဇယား",
   "Official DOPA registered population": "DOPA တရားဝင် မှတ်ပုံတင်လူဦးရေ",
   "target-district population": "ပစ်မှတ်ခရိုင် လူဦးရေ",
+  "Request Help": "အကူအညီတောင်းရန်",
 };
 
 function formatFeedTime(value?: string | null, language: Language = "en") {
@@ -465,6 +467,7 @@ export default function Home() {
           <a href="#alerts">{tr("Water flags")} <span className="nav-count">{alerts.length}</span></a>
           <a href="#districts">{tr("Districts")}</a>
           <a href="#sources">{tr("Sources")}</a>
+          <a href="/request-help">{tr("Request Help")}</a>
         </nav>
 
         <div className="topbar-actions">
@@ -773,6 +776,7 @@ export default function Home() {
         <a href="#alerts"><BellRing size={19} /><span>{tr("Water flags")}</span></a>
         <a href="#districts"><Gauge size={19} /><span>{tr("Districts")}</span></a>
         <a href="#sources"><Database size={19} /><span>{tr("Sources")}</span></a>
+        <a className="request-help-nav" href="/request-help"><LifeBuoy size={19} /><span>{tr("Request Help")}</span></a>
       </nav>
 
       {drawerAlert && (
