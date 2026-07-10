@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Activity,
   Bell,
   BellRing,
   Building2,
@@ -22,6 +23,7 @@ import {
   ShieldAlert,
   Thermometer,
   TriangleAlert,
+  Users,
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -108,6 +110,16 @@ type GovernmentData = {
     datasetUpdatedAt: string;
     sourceUrl: string;
   } | null;
+  population: {
+    districts: Array<{ district: string; population: number; screenedAsExposed: boolean }>;
+    totalTargetPopulation: number;
+    exposedScreeningPopulation: number | null;
+    flaggedDistrictCount: number;
+    referencePeriod: string;
+    methodology: string;
+    sourceUrl: string;
+    downloadUrl: string;
+  };
   sources: SourceStatus[];
 };
 
@@ -222,6 +234,25 @@ const myTranslations: Record<string, string> = {
   "Satellite": "ဂြိုဟ်တုမြေပုံ",
   "Interactive monitoring map": "အပြန်အလှန် အသုံးပြုနိုင်သော စောင့်ကြည့်မြေပုံ",
   "Map style": "မြေပုံပုံစံ",
+  "POPULATION SCREENING": "လူဦးရေ ထိခိုက်နိုင်မှု စိစစ်ချက်",
+  "Potentially exposed population": "ထိခိုက်နိုင်သည့် လူဦးရေ",
+  "people": "ဦး",
+  "registered population in districts with a level 4-5 gauge": "အဆင့် ၄-၅ ရေတိုင်းစခန်းရှိသော ခရိုင်များ၏ မှတ်ပုံတင်လူဦးရေ",
+  "Target-area registered population": "ပစ်မှတ်ဧရိယာ မှတ်ပုံတင်လူဦးရေ",
+  "June 2026 DOPA registry": "DOPA ၂၀၂၆ ဇွန် မှတ်ပုံတင်စာရင်း",
+  "No level 4-5 district currently identified": "လက်ရှိ အဆင့် ၄-၅ ခရိုင် မတွေ့ရှိပါ",
+  "District-level screening estimate, not a flood-footprint count.": "ခရိုင်အဆင့် စိစစ်ခန့်မှန်းချက်သာဖြစ်ပြီး ရေလွှမ်းဧရိယာအတွင်း လူဦးရေတွက်ချက်မှု မဟုတ်ပါ။",
+  "Open DOPA population source": "DOPA လူဦးရေဒေတာ ဖွင့်ရန်",
+  "RIVER LEVEL TREND": "မြစ်ရေအဆင့် လမ်းကြောင်း",
+  "Latest two gauge observations": "နောက်ဆုံး ရေတိုင်းတာချက် နှစ်ခု",
+  "Choose gauge": "ရေတိုင်းစခန်း ရွေးရန်",
+  "Previous": "ယခင်",
+  "Current": "လက်ရှိ",
+  "Reported bank level": "ဖော်ပြထားသော ကမ်းပါးအဆင့်",
+  "Two source readings only": "ရင်းမြစ်တိုင်းတာချက် နှစ်ခုသာ",
+  "River level chart": "မြစ်ရေအဆင့်ဇယား",
+  "Official DOPA registered population": "DOPA တရားဝင် မှတ်ပုံတင်လူဦးရေ",
+  "target-district population": "ပစ်မှတ်ခရိုင် လူဦးရေ",
 };
 
 function formatFeedTime(value?: string | null, language: Language = "en") {
@@ -245,6 +276,47 @@ function displayDistrictName(apiName: string, language: Language) {
   return language === "my" ? district.nameMy : district.name;
 }
 
+function formatPopulation(value: number | null | undefined, language: Language) {
+  if (value == null) return "-";
+  return new Intl.NumberFormat(language === "my" ? "my-MM" : "en-US").format(value);
+}
+
+function RiverLevelChart({ station, language, tr }: { station: WaterStation; language: Language; tr: (text: string) => string }) {
+  const bankLevel = station.levelMsl + station.bankDistanceM;
+  const values = [station.previousLevelMsl, station.levelMsl, bankLevel];
+  const minimum = Math.min(...values) - 0.25;
+  const maximum = Math.max(...values) + 0.25;
+  const y = (value: number) => 178 - ((value - minimum) / Math.max(maximum - minimum, 0.1)) * 128;
+  const previousY = y(station.previousLevelMsl);
+  const currentY = y(station.levelMsl);
+  const bankY = y(bankLevel);
+  const trendTone = station.levelMsl > station.previousLevelMsl ? "rising" : station.levelMsl < station.previousLevelMsl ? "falling" : "steady";
+
+  return (
+    <div className="river-chart-wrap">
+      <svg className="river-chart" viewBox="0 0 600 220" role="img" aria-label={`${tr("River level chart")}: ${station.name}`}>
+        {[50, 82, 114, 146, 178].map((gridY) => <line className="chart-gridline" key={gridY} x1="62" x2="548" y1={gridY} y2={gridY} />)}
+        <line className="bank-line" x1="62" x2="548" y1={bankY} y2={bankY} />
+        <text className="bank-label" x="542" y={Math.max(16, bankY - 7)} textAnchor="end">{tr("Reported bank level")} {bankLevel.toFixed(2)} m</text>
+        <path className="river-area" d={`M 92 ${previousY} L 508 ${currentY} L 508 178 L 92 178 Z`} />
+        <line className={`river-line ${trendTone}`} x1="92" x2="508" y1={previousY} y2={currentY} />
+        <circle className="river-point previous" cx="92" cy={previousY} r="7" />
+        <circle className={`river-point current ${trendTone}`} cx="508" cy={currentY} r="8" />
+        <text className="point-value" x="92" y={Math.max(18, previousY - 13)} textAnchor="middle">{station.previousLevelMsl.toFixed(2)} m</text>
+        <text className="point-value" x="508" y={Math.max(18, currentY - 14)} textAnchor="middle">{station.levelMsl.toFixed(2)} m</text>
+        <text className="axis-label" x="92" y="205" textAnchor="middle">{tr("Previous")}</text>
+        <text className="axis-label" x="508" y="205" textAnchor="middle">{tr("Current")}</text>
+      </svg>
+      <div className="river-chart-values">
+        <span><small>{tr("Previous")}</small><b>{station.previousLevelMsl.toFixed(2)} m MSL</b></span>
+        <span><small>{tr("Current")}</small><b>{station.levelMsl.toFixed(2)} m MSL</b></span>
+        <span><small>{tr("Reported bank level")}</small><b>{bankLevel.toFixed(2)} m MSL</b></span>
+      </div>
+      <p className="chart-footnote">{tr("Two source readings only")} - {formatFeedTime(station.observedAt, language)}</p>
+    </div>
+  );
+}
+
 export default function Home() {
   const [data, setData] = useState<GovernmentData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -255,6 +327,7 @@ export default function Home() {
   const [baseMap, setBaseMap] = useState<BaseMap>("streets");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [drawerId, setDrawerId] = useState<string | null>(null);
+  const [selectedGaugeCode, setSelectedGaugeCode] = useState("");
   const [bannerVisible, setBannerVisible] = useState(true);
   const [language, setLanguage] = useState<Language>("en");
   const tr = useCallback((text: string) => language === "my" ? myTranslations[text] ?? text : text, [language]);
@@ -338,7 +411,9 @@ export default function Home() {
   }, [data]);
 
   const connectedCount = data?.sources.filter((source) => source.status === "connected").length ?? 0;
+  const sourceCount = data?.sources.length ?? 5;
   const maximumRainStation = data?.water?.rainfallStations?.[0] ?? null;
+  const selectedGauge = data?.water?.stations.find((station) => station.code === selectedGaugeCode) ?? data?.water?.stations[0] ?? null;
   const mapPoints = useMemo<FloodMapPoint[]>(() => {
     if (mapLayer === "warnings") {
       return alerts.map((alert) => ({
@@ -398,9 +473,9 @@ export default function Home() {
             <button type="button" aria-pressed={language === "en"} className={language === "en" ? "active" : ""} onClick={() => setLanguage("en")}>EN</button>
             <button type="button" aria-pressed={language === "my"} className={language === "my" ? "active" : ""} onClick={() => setLanguage("my")}>မြန်မာ</button>
           </div>
-          <div className="system-state" aria-label={`${connectedCount}/4 ${tr("official sources")}`}>
-            <span className={connectedCount === 4 ? "live-dot" : "live-dot partial"} />
-            <span>{connectedCount}/4 {tr("official sources")}</span>
+          <div className="system-state" aria-label={`${connectedCount}/${sourceCount} ${tr("official sources")}`}>
+            <span className={connectedCount === sourceCount ? "live-dot" : "live-dot partial"} />
+            <span>{connectedCount}/{sourceCount} {tr("official sources")}</span>
           </div>
           <button className="icon-button notification-button" aria-label={tr("Water flags")} title={tr("Water flags")}>
             <Bell size={19} />
@@ -582,17 +657,68 @@ export default function Home() {
                     ? source.id === "tmd" ? "၃ နာရီတစ်ကြိမ် တိုက်ရိုက်တိုင်းတာချက်"
                       : source.id === "thaiwater" ? "ရေတိုင်းစခန်းနှင့် ၂၄ နာရီ မိုးရေ"
                       : source.id === "roads" ? "လမ်းရေဘေး မှတ်တမ်းဟောင်း (၂၀၂၂)"
-                      : "ခိုလှုံရာ ပြင်ဆင်မှုဒေတာ"
+                      : source.id === "ddpm" ? "ခိုလှုံရာ ပြင်ဆင်မှုဒေတာ"
+                      : "DOPA ၂၀၂၆ ဇွန် မှတ်ပုံတင်လူဦးရေ"
                     : source.mode}
                   {source.id === "tmd" && data?.weather ? ` - ${data.weather.stations.length} ${tr("target-area stations")}` : ""}
                   {source.id === "thaiwater" && data?.water ? ` - ${data.water.stations.length} ${tr("target-area gauges")}` : ""}
                   {source.id === "roads" && data?.roads ? ` - ${data.roads.recordCount} ${tr("target-area archive records")}` : ""}
                   {source.id === "ddpm" && data?.ddpm ? ` - ${data.ddpm.shelterCount} ${tr("target-area shelter records")}` : ""}
+                  {source.id === "dopa" && data?.population ? ` - ${formatPopulation(data.population.totalTargetPopulation, language)} ${tr("target-district population")}` : ""}
                 </small>
               </span>
               <ExternalLink size={14} />
             </a>
           ))}
+        </section>
+
+        <section className="insight-grid" aria-label={tr("Potentially exposed population")}>
+          <article className="population-panel">
+            <div className="section-heading">
+              <div><span className="panel-kicker">{tr("POPULATION SCREENING")}</span><h2>{tr("Potentially exposed population")}</h2></div>
+              <a className="icon-button" href={data?.population.sourceUrl} target="_blank" rel="noreferrer" aria-label={tr("Open DOPA population source")} title={tr("Open DOPA population source")}><ExternalLink size={17} /></a>
+            </div>
+
+            <div className="exposure-summary">
+              <span className="exposure-icon"><Users size={24} /></span>
+              <span><strong>{formatPopulation(data?.population.exposedScreeningPopulation, language)}</strong><small>{tr("people")}</small></span>
+              <p>{tr("registered population in districts with a level 4-5 gauge")}</p>
+            </div>
+
+            <div className="population-total">
+              <span><small>{tr("Target-area registered population")}</small><b>{formatPopulation(data?.population.totalTargetPopulation, language)}</b></span>
+              <span><small>{tr("June 2026 DOPA registry")}</small><b>{data?.population.flaggedDistrictCount ?? 0}/5 {tr("Districts")}</b></span>
+            </div>
+
+            <div className="population-list">
+              {(data?.population.districts ?? []).map((district) => (
+                <div className={`population-row ${district.screenedAsExposed ? "exposed" : ""}`} key={district.district}>
+                  <span><i />{displayDistrictName(district.district, language)}</span>
+                  <span className="population-bar"><i style={{ width: `${(district.population / Math.max(...(data?.population.districts ?? []).map((item) => item.population), 1)) * 100}%` }} /></span>
+                  <b>{formatPopulation(district.population, language)}</b>
+                </div>
+              ))}
+            </div>
+
+            {!loading && data?.population.exposedScreeningPopulation === 0 && <p className="population-clear">{tr("No level 4-5 district currently identified")}</p>}
+            <p className="screening-note"><Info size={14} /> {tr("District-level screening estimate, not a flood-footprint count.")}</p>
+          </article>
+
+          <article className="river-panel">
+            <div className="section-heading river-heading">
+              <div><span className="panel-kicker">{tr("RIVER LEVEL TREND")}</span><h2>{tr("Latest two gauge observations")}</h2></div>
+              <Activity size={20} />
+            </div>
+
+            <label className="gauge-selector">
+              <span>{tr("Choose gauge")}</span>
+              <select value={selectedGauge?.code ?? ""} onChange={(event) => setSelectedGaugeCode(event.target.value)}>
+                {(data?.water?.stations ?? []).map((station) => <option value={station.code} key={station.code}>{station.name} - {displayDistrictName(station.district, language)}</option>)}
+              </select>
+            </label>
+
+            {selectedGauge ? <RiverLevelChart station={selectedGauge} language={language} tr={tr} /> : <p className="empty-state">{tr("ThaiWater feed unavailable. No substitute values are shown.")}</p>}
+          </article>
         </section>
 
         <section className="lower-grid">

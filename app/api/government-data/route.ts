@@ -29,7 +29,21 @@ const SOURCES = {
     metadataUrl: "https://catalog.disaster.go.th/api/3/action/package_show?id=dpm-gd002",
     publicUrl: "https://catalog.disaster.go.th/dataset/dpm-gd002",
   },
+  population: {
+    name: "Department of Provincial Administration",
+    shortName: "DOPA",
+    dataUrl: "https://stat.bora.dopa.go.th/new_stat/file/69/2_6906.xls",
+    publicUrl: "https://stat.bora.dopa.go.th/new_stat/webPage/statByMooBan.php?month=06&year=69",
+  },
 } as const;
+
+const REGISTERED_POPULATION = [
+  { district: "Mae Sot District", population: 180_834 },
+  { district: "Umphang District", population: 54_049 },
+  { district: "Tha Song Yang District", population: 102_587 },
+  { district: "Mae Ramat District", population: 60_532 },
+  { district: "Phop Phra District", population: 102_526 },
+] as const;
 
 const TARGET_DISTRICTS_EN = new Set([
   "Mae Sot District",
@@ -234,6 +248,31 @@ async function getDdpmPreparedness() {
   };
 }
 
+function getPopulationScreening(water: Awaited<ReturnType<typeof getWater>> | null) {
+  const flaggedDistricts = new Set(
+    (water?.stations ?? [])
+      .filter((station) => station.situationLevel >= 4)
+      .map((station) => station.district),
+  );
+  const districts = REGISTERED_POPULATION.map((district) => ({
+    ...district,
+    screenedAsExposed: flaggedDistricts.has(district.district),
+  }));
+
+  return {
+    districts,
+    totalTargetPopulation: districts.reduce((total, district) => total + district.population, 0),
+    exposedScreeningPopulation: water
+      ? districts.filter((district) => district.screenedAsExposed).reduce((total, district) => total + district.population, 0)
+      : null,
+    flaggedDistrictCount: flaggedDistricts.size,
+    referencePeriod: "June 2026",
+    methodology: "Registered population in target districts containing at least one ThaiWater situation level 4-5 gauge.",
+    sourceUrl: SOURCES.population.publicUrl,
+    downloadUrl: SOURCES.population.dataUrl,
+  };
+}
+
 function sourceStatus(
   id: string,
   source: { name: string; shortName: string; publicUrl: string },
@@ -264,6 +303,7 @@ export async function GET() {
   const water = waterResult.status === "fulfilled" ? waterResult.value : null;
   const roads = roadsResult.status === "fulfilled" ? roadsResult.value : null;
   const ddpm = ddpmResult.status === "fulfilled" ? ddpmResult.value : null;
+  const population = getPopulationScreening(water);
 
   return Response.json(
     {
@@ -272,11 +312,21 @@ export async function GET() {
       water,
       roads,
       ddpm,
+      population,
       sources: [
         sourceStatus("tmd", SOURCES.tmd, weatherResult, "Live 3-hour observation", weather?.observedAt),
         sourceStatus("thaiwater", { ...SOURCES.water, url: SOURCES.water.publicUrl }, waterResult, "Live gauges and 24-hour rainfall", water?.observedAt),
         sourceStatus("roads", SOURCES.roads, roadsResult, "Official road-flood archive (2022)", "2022"),
         sourceStatus("ddpm", { ...SOURCES.ddpm, url: SOURCES.ddpm.publicUrl }, ddpmResult, "Official shelter preparedness dataset", ddpm?.datasetUpdatedAt),
+        {
+          id: "dopa",
+          name: SOURCES.population.name,
+          shortName: SOURCES.population.shortName,
+          url: SOURCES.population.publicUrl,
+          mode: "Official June 2026 registered-population snapshot",
+          status: "connected",
+          updatedAt: "2026-06",
+        },
       ],
     },
     {
