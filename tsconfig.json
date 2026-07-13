@@ -30,5 +30,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "FloodWatch-Tak-Vercel-Upload", ".vercel-build-validation"]
+  "exclude": ["node_modules"]
 }

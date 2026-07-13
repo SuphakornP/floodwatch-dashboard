@@ -2,7 +2,6 @@ import { createAutomatedDraft, type AlertDistrict, type AlertSeverity, type Warn
 import { isAlertEvaluator } from "../../../lib/alertAuth";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
 
 type WaterStation = {
   code: string;

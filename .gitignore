@@ -17,7 +17,6 @@
 
 # next.js
 /.next/
-/.vinext/
 /out/
 
 # misc
@@ -34,18 +33,11 @@ yarn-error.log*
 .env*
 !.env.example
 
-# vercel
-.vercel
-/.vercel-build-validation/
+# local secrets and generated development artifacts
 /.alert-admin-access.txt
-/FloodWatch-Tak-Vercel-Upload/
-/vercel-deploy/
 /*devserver*.log
 /tsconfig.tsbuildinfo
+/data/
 
 # typescript
 next-env.d.ts
-/dist/
-/.wrangler/
-/outputs/
-/work/

@@ -1,4 +1,4 @@
-import { env } from "cloudflare:workers";
+import { database } from "./database";
 
 export const alertDistricts = ["All districts", "Mae Sot", "Umphang", "Tha Song Yang", "Mae Ramat", "Phop Phra"] as const;
 export const alertLanguages = ["en", "my", "th"] as const;
@@ -91,7 +91,7 @@ const schemaStatements = [
 let schemaReady: Promise<unknown> | null = null;
 
 function ensureSchema() {
-  schemaReady ??= env.DB.batch(schemaStatements.map((statement) => env.DB.prepare(statement))).catch((error: unknown) => {
+  schemaReady ??= database.batch(schemaStatements.map((statement) => database.prepare(statement))).catch((error: unknown) => {
     schemaReady = null;
     throw error;
   });
@@ -126,27 +126,27 @@ export async function listPublishedAlerts(district?: AlertDistrict) {
   await ensureSchema();
   const now = new Date().toISOString();
   const query = district && district !== "All districts"
-    ? env.DB.prepare(`SELECT * FROM warning_alerts WHERE status = 'published' AND expires_at > ? AND (district = 'All districts' OR district = ?) ORDER BY published_at DESC LIMIT 20`).bind(now, district)
-    : env.DB.prepare(`SELECT * FROM warning_alerts WHERE status = 'published' AND expires_at > ? ORDER BY published_at DESC LIMIT 20`).bind(now);
+    ? database.prepare(`SELECT * FROM warning_alerts WHERE status = 'published' AND expires_at > ? AND (district = 'All districts' OR district = ?) ORDER BY published_at DESC LIMIT 20`).bind(now, district)
+    : database.prepare(`SELECT * FROM warning_alerts WHERE status = 'published' AND expires_at > ? ORDER BY published_at DESC LIMIT 20`).bind(now);
   const result = await query.all() as { results: Record<string, unknown>[] };
   return result.results.map(mapAlert);
 }
 
 export async function listAlertsForAdmin() {
   await ensureSchema();
-  const result = await env.DB.prepare("SELECT * FROM warning_alerts ORDER BY created_at DESC LIMIT 100").all() as { results: Record<string, unknown>[] };
+  const result = await database.prepare("SELECT * FROM warning_alerts ORDER BY created_at DESC LIMIT 100").all() as { results: Record<string, unknown>[] };
   return result.results.map(mapAlert);
 }
 
 export async function getWarningAlert(id: string) {
   await ensureSchema();
-  const row = await env.DB.prepare("SELECT * FROM warning_alerts WHERE id = ?").bind(id).first() as Record<string, unknown> | null;
+  const row = await database.prepare("SELECT * FROM warning_alerts WHERE id = ?").bind(id).first() as Record<string, unknown> | null;
   return row ? mapAlert(row) : null;
 }
 
 export async function createWarningAlert(alert: WarningAlertRecord) {
   await ensureSchema();
-  await env.DB.prepare(`INSERT INTO warning_alerts (
+  await database.prepare(`INSERT INTO warning_alerts (
     id, status, severity, district, title_en, title_my, title_th, body_en, body_my,
     body_th, source_name, source_url, observed_at, created_at, published_at, expires_at,
     created_by, trigger_key, auto_generated
@@ -162,7 +162,7 @@ export async function createWarningAlert(alert: WarningAlertRecord) {
 
 export async function createAutomatedDraft(alert: WarningAlertRecord) {
   await ensureSchema();
-  const result = await env.DB.prepare(`INSERT OR IGNORE INTO warning_alerts (
+  const result = await database.prepare(`INSERT OR IGNORE INTO warning_alerts (
     id, status, severity, district, title_en, title_my, title_th, body_en, body_my,
     body_th, source_name, source_url, observed_at, created_at, published_at, expires_at,
     created_by, trigger_key, auto_generated
@@ -178,21 +178,21 @@ export async function createAutomatedDraft(alert: WarningAlertRecord) {
 export async function publishWarningAlert(id: string, publishedBy: string) {
   await ensureSchema();
   const publishedAt = new Date().toISOString();
-  await env.DB.prepare("UPDATE warning_alerts SET status = 'published', published_at = ?, created_by = ? WHERE id = ? AND status = 'draft'")
+  await database.prepare("UPDATE warning_alerts SET status = 'published', published_at = ?, created_by = ? WHERE id = ? AND status = 'draft'")
     .bind(publishedAt, publishedBy, id).run();
   return getWarningAlert(id);
 }
 
 export async function expireWarningAlert(id: string) {
   await ensureSchema();
-  await env.DB.prepare("UPDATE warning_alerts SET status = 'expired' WHERE id = ?").bind(id).run();
+  await database.prepare("UPDATE warning_alerts SET status = 'expired' WHERE id = ?").bind(id).run();
   return getWarningAlert(id);
 }
 
 export async function upsertAlertSubscription(subscription: AlertSubscriptionRecord) {
   await ensureSchema();
   const now = new Date().toISOString();
-  await env.DB.prepare(`INSERT INTO alert_subscriptions (
+  await database.prepare(`INSERT INTO alert_subscriptions (
     id, endpoint, p256dh, auth, district, language, active, consented_at, updated_at, last_error
   ) VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, NULL)
   ON CONFLICT(endpoint) DO UPDATE SET
@@ -209,15 +209,15 @@ export async function upsertAlertSubscription(subscription: AlertSubscriptionRec
 
 export async function deactivateAlertSubscription(endpoint: string, error: string | null = null) {
   await ensureSchema();
-  await env.DB.prepare("UPDATE alert_subscriptions SET active = 0, updated_at = ?, last_error = ? WHERE endpoint = ?")
+  await database.prepare("UPDATE alert_subscriptions SET active = 0, updated_at = ?, last_error = ? WHERE endpoint = ?")
     .bind(new Date().toISOString(), error, endpoint).run();
 }
 
 export async function listSubscriptionsForAlert(district: AlertDistrict): Promise<AlertSubscriptionRecord[]> {
   await ensureSchema();
   const query = district === "All districts"
-    ? env.DB.prepare("SELECT id, endpoint, p256dh, auth, district, language FROM alert_subscriptions WHERE active = 1 LIMIT 5000")
-    : env.DB.prepare("SELECT id, endpoint, p256dh, auth, district, language FROM alert_subscriptions WHERE active = 1 AND (district = 'All districts' OR district = ?) LIMIT 5000").bind(district);
+    ? database.prepare("SELECT id, endpoint, p256dh, auth, district, language FROM alert_subscriptions WHERE active = 1 LIMIT 5000")
+    : database.prepare("SELECT id, endpoint, p256dh, auth, district, language FROM alert_subscriptions WHERE active = 1 AND (district = 'All districts' OR district = ?) LIMIT 5000").bind(district);
   const result = await query.all() as { results: Record<string, unknown>[] };
   return result.results.map((row: Record<string, unknown>) => ({
     id: String(row.id),
@@ -237,7 +237,7 @@ export async function recordAlertDelivery(input: {
   error: string | null;
 }) {
   await ensureSchema();
-  await env.DB.prepare("INSERT INTO alert_deliveries (id, alert_id, subscription_id, status, attempted_at, response_code, error) VALUES (?, ?, ?, ?, ?, ?, ?)")
+  await database.prepare("INSERT INTO alert_deliveries (id, alert_id, subscription_id, status, attempted_at, response_code, error) VALUES (?, ?, ?, ?, ?, ?, ?)")
     .bind(crypto.randomUUID(), input.alertId, input.subscriptionId, input.status, new Date().toISOString(), input.responseCode, input.error?.slice(0, 500) ?? null)
     .run();
 }

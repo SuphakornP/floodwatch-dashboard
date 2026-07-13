@@ -2,7 +2,6 @@ import { parse as parseCsv } from "csv-parse/sync";
 import { XMLParser } from "fast-xml-parser";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
 
 const SOURCES = {
   tmd: {

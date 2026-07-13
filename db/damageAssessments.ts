@@ -1,4 +1,4 @@
-import { env } from "cloudflare:workers";
+import { database } from "./database";
 
 export type DamageAssessmentRecord = {
   id: string;
@@ -64,17 +64,17 @@ const createTableSql = `
 let schemaReady: Promise<unknown> | null = null;
 
 function ensureSchema() {
-  schemaReady ??= env.DB.batch([
-    env.DB.prepare(createTableSql),
-    env.DB.prepare("CREATE INDEX IF NOT EXISTS damage_assessments_status_created_idx ON damage_assessments (status, created_at)"),
-    env.DB.prepare("CREATE INDEX IF NOT EXISTS damage_assessments_district_idx ON damage_assessments (district)"),
+  schemaReady ??= database.batch([
+    database.prepare(createTableSql),
+    database.prepare("CREATE INDEX IF NOT EXISTS damage_assessments_status_created_idx ON damage_assessments (status, created_at)"),
+    database.prepare("CREATE INDEX IF NOT EXISTS damage_assessments_district_idx ON damage_assessments (district)"),
   ]);
   return schemaReady;
 }
 
 export async function createDamageAssessment(record: DamageAssessmentRecord) {
   await ensureSchema();
-  return env.DB.prepare(`
+  return database.prepare(`
     INSERT INTO damage_assessments (
       id, reference, created_at, status, assessor_name, phone, organization, observed_at,
       district, village, location_details, latitude, longitude, severity, access_status,

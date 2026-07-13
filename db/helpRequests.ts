@@ -1,4 +1,4 @@
-import { env } from "cloudflare:workers";
+import { database } from "./database";
 
 export type HelpRequestRecord = {
   id: string;
@@ -50,17 +50,17 @@ const createTableSql = `
 let schemaReady: Promise<unknown> | null = null;
 
 function ensureSchema() {
-  schemaReady ??= env.DB.batch([
-    env.DB.prepare(createTableSql),
-    env.DB.prepare("CREATE INDEX IF NOT EXISTS help_requests_status_created_idx ON help_requests (status, created_at)"),
-    env.DB.prepare("CREATE INDEX IF NOT EXISTS help_requests_district_idx ON help_requests (district)"),
+  schemaReady ??= database.batch([
+    database.prepare(createTableSql),
+    database.prepare("CREATE INDEX IF NOT EXISTS help_requests_status_created_idx ON help_requests (status, created_at)"),
+    database.prepare("CREATE INDEX IF NOT EXISTS help_requests_district_idx ON help_requests (district)"),
   ]);
   return schemaReady;
 }
 
 export async function createHelpRequest(record: HelpRequestRecord) {
   await ensureSchema();
-  return env.DB.prepare(`
+  return database.prepare(`
     INSERT INTO help_requests (
       id, reference, created_at, status, urgency, full_name, phone, alternate_contact,
       preferred_language, district, village, location_details, latitude, longitude,
