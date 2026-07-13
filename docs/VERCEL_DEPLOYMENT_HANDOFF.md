@@ -1,20 +1,23 @@
 # Vercel Deployment Handoff
 
-This guide is written for the person receiving the GitHub repository. The
-initial Vercel deployment does not require them to rewrite the database code.
+This guide is written for the person receiving the project. The source
+repository belongs to the original author and is used only to create the
+recipient's independent copy. The recipient does not need write access to the
+source or need to rewrite the database code.
 
 ## Fastest route for a non-programmer
 
 Use the [one-flow deployment guide](QUICK_DEPLOY.md). Its **Deploy with
-Vercel** button makes Turso Cloud part of project creation, so the recipient
-does not need to visit Turso separately or copy credentials. The remaining
-sections below are reference material for a maintainer or operator.
+Vercel** button creates a repository in the recipient's GitHub scope and makes
+Turso Cloud part of project creation. The recipient does not need to visit
+Turso separately or copy credentials. The remaining sections below are
+reference material for a maintainer or operator.
 
 ## Handoff status
 
 The project is **technically ready for a Vercel test deployment**. Database
-features become ready after Turso is connected and the project is redeployed.
-The code now includes:
+features become ready after Turso is connected; the recommended one-flow setup
+does this before the first deployment. The code now includes:
 
 - A Turso/libSQL database adapter for Vercel Functions
 - Local SQLite development through the same adapter
@@ -30,12 +33,20 @@ submissions and complete the security and operations checklist in this guide.
 
 ## Repository
 
-- GitHub: [github.com/SuphakornP/floodwatch-dashboard](https://github.com/SuphakornP/floodwatch-dashboard)
+- Read-only source: [github.com/SuphakornP/floodwatch-dashboard](https://github.com/SuphakornP/floodwatch-dashboard)
+- Recipient repository: create during handoff and record its URL here:
+  `https://github.com/RECIPIENT_ORG/RECIPIENT_REPOSITORY`
 - Production branch: `main`
 - Framework: Next.js
 - Package manager: npm
 - Build command: `npm run build`
 - Vercel configuration: [`vercel.json`](../vercel.json)
+
+The recipient repository must become the Git origin and the repository connected
+to Vercel. No deployment or push should depend on write access to the source.
+Keep the source public until the recipient copy and first deployment are
+complete. The copies are independent; upstream changes do not sync
+automatically.
 
 ## What Turso does
 
@@ -56,14 +67,19 @@ by Git and is never used as a fallback on Vercel.
 
 ## Deploy in Vercel
 
-### 1. Import the repository
+### 1. Create the recipient-owned repository and project
 
-1. Sign in to Vercel with the GitHub account that can access the repository.
-2. Select **Add New**, then **Project**.
-3. Import `SuphakornP/floodwatch-dashboard`.
-4. Keep the automatically detected Next.js settings.
-5. Allow Vercel to create the project and its initial deployment. Database
-   routes may return `503` until Turso is connected.
+1. Sign in to Vercel and the GitHub account or organization that will own the
+   recipient's project.
+2. Open the **Deploy with Vercel** button in the
+   [one-flow deployment guide](QUICK_DEPLOY.md).
+3. Choose the recipient's GitHub destination, repository name, and appropriate
+   visibility. Do not request write access to the source repository.
+4. Approve creation of the new GitHub repository and keep the automatically
+   detected Next.js settings.
+5. Approve Turso Cloud in the same flow and select an appropriate plan, database
+   name, and region. Ask the owner before choosing any paid plan.
+6. Select **Deploy** and wait for project creation to finish.
 
 Expected project settings:
 
@@ -75,16 +91,27 @@ Expected project settings:
 | Build command | `npm run build` |
 | Output directory | Default |
 | Production branch | `main` |
+| Git repository | Recipient-owned repository, not the read-only source |
 | Function region | Singapore (`sin1`), already set in `vercel.json` |
 
-### 2. Connect Turso Cloud
+### 2. Confirm ownership and Turso Cloud
 
-1. Open the project's **Storage** page or the Vercel Marketplace.
-2. Find **Turso Cloud** and select **Install**.
-3. Create a Turso database and connect it to this Vercel project.
-4. Select the Preview and Production environments that need the database.
+1. Confirm the new repository URL belongs to the recipient's GitHub account or
+   organization.
+2. Under **Vercel > Project Settings > Git**, confirm the project points to that
+   new repository and not `SuphakornP/floodwatch-dashboard`.
+3. Open **Storage** and confirm the new Turso database belongs to the recipient's
+   Vercel scope and is connected to Production.
+4. Connect Preview only when preview deployments will be used.
 5. For a real launch, use separate Preview and Production databases so test
    submissions cannot mix with real records.
+6. Ask Codex to replace all hard-coded source repository URLs in `README.md`,
+   deployment buttons, and handoff documents with the recipient repository URL.
+   Commit those ownership changes to the recipient repository only.
+
+If Turso was not created in the one-flow setup, open the project's **Storage**
+page, find **Turso Cloud**, select **Install**, and create a database before
+continuing.
 
 The integration should add these variables automatically:
 
@@ -118,11 +145,11 @@ For a visual test deployment, push and scheduler variables can remain blank.
 Do not configure a cron job until its plan, monitoring owner, and response
 process are decided.
 
-### 4. Deploy and verify the database
+### 4. Verify the deployment and database
 
-1. Open the Vercel project, select **Deployments**, open the three-dot menu for
-   the latest deployment, and select **Redeploy**. Redeploy the same environment
-   for which the Turso variables were enabled.
+1. If Git ownership or Turso settings changed after the first deployment, open
+   **Deployments**, use the three-dot menu for the latest deployment, and select
+   **Redeploy** for the same environment.
 2. Open `https://YOUR-DEPLOYMENT.vercel.app/api/health`.
 3. Continue only when it returns HTTP `200` with:
 
@@ -252,16 +279,19 @@ configuration. Check it separately.
 
 ## Copyable handoff message
 
-> The repository is configured for Next.js on Vercel and Turso Cloud. Import
-> the GitHub project, install the Turso Cloud integration, confirm
-> `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN`, redeploy, and check `/api/health`.
-> Do not collect real emergency information until staff access, response
-> ownership, privacy, retention, rate limiting, and backup procedures are in
-> place. Full instructions are in `docs/VERCEL_DEPLOYMENT_HANDOFF.md`.
+> Use `https://github.com/SuphakornP/floodwatch-dashboard` only as the read-only
+> starting source. Use the Deploy with Vercel button to create an independent
+> repository, Vercel project, and Turso database in your own accounts. Confirm
+> Vercel is connected to your new repository, update repository URLs in the
+> documentation, and check `/api/health`. Do not collect real emergency
+> information until staff access, response ownership, privacy, retention, rate
+> limiting, and backup procedures are in place. Full instructions are in
+> `docs/QUICK_DEPLOY.md` and `docs/VERCEL_DEPLOYMENT_HANDOFF.md`.
 
 ## Official references
 
 - [Turso Cloud for Vercel](https://vercel.com/marketplace/tursocloud)
+- [Vercel Deploy Button source and repository copy](https://vercel.com/docs/deploy-button/source)
 - [Turso Next.js guide](https://docs.turso.tech/sdk/ts/guides/nextjs)
 - [Turso TypeScript client reference](https://docs.turso.tech/sdk/ts/reference)
 - [Vercel Function filesystem behavior](https://vercel.com/docs/functions/runtimes)

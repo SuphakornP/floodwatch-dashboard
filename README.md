@@ -16,6 +16,14 @@ migration command. Start with the
 [short deployment guide](docs/QUICK_DEPLOY.md); the
 [full handoff guide](docs/VERCEL_DEPLOYMENT_HANDOFF.md) is for maintainers.
 
+This repository is the public, read-only starting source for the handoff. The
+deployment flow creates an independent repository in the recipient's GitHub
+account or organization. That new repository becomes the source for their
+future changes and Vercel deployments; they do not need write access to
+`SuphakornP/floodwatch-dashboard`. Changes made here do not automatically sync
+to the recipient's copy. Keep this source public until the recipient's copy and
+first deployment are complete.
+
 The app deliberately refuses to use a local database file in production
 because a Vercel Function cannot preserve that file reliably.
 
