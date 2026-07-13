@@ -1,4 +1,5 @@
 import { database } from "./database";
+import { ensureSchema } from "./schema";
 
 export type DamageAssessmentRecord = {
   id: string;
@@ -28,49 +29,6 @@ export type DamageAssessmentRecord = {
   evidenceUrl: string | null;
   description: string;
 };
-
-const createTableSql = `
-  CREATE TABLE IF NOT EXISTS damage_assessments (
-    id TEXT PRIMARY KEY NOT NULL,
-    reference TEXT NOT NULL UNIQUE,
-    created_at TEXT NOT NULL,
-    status TEXT NOT NULL DEFAULT 'new',
-    assessor_name TEXT NOT NULL,
-    phone TEXT NOT NULL,
-    organization TEXT,
-    observed_at TEXT NOT NULL,
-    district TEXT NOT NULL,
-    village TEXT NOT NULL,
-    location_details TEXT NOT NULL,
-    latitude TEXT,
-    longitude TEXT,
-    severity TEXT NOT NULL,
-    access_status TEXT NOT NULL,
-    water_present INTEGER NOT NULL DEFAULT 0,
-    flood_depth_cm INTEGER NOT NULL DEFAULT 0,
-    households_affected INTEGER NOT NULL DEFAULT 0,
-    people_affected INTEGER NOT NULL DEFAULT 0,
-    people_displaced INTEGER NOT NULL DEFAULT 0,
-    people_injured INTEGER NOT NULL DEFAULT 0,
-    structures_damaged INTEGER NOT NULL DEFAULT 0,
-    structures_destroyed INTEGER NOT NULL DEFAULT 0,
-    categories TEXT NOT NULL,
-    hazards TEXT NOT NULL,
-    evidence_url TEXT,
-    description TEXT NOT NULL
-  )
-`;
-
-let schemaReady: Promise<unknown> | null = null;
-
-function ensureSchema() {
-  schemaReady ??= database.batch([
-    database.prepare(createTableSql),
-    database.prepare("CREATE INDEX IF NOT EXISTS damage_assessments_status_created_idx ON damage_assessments (status, created_at)"),
-    database.prepare("CREATE INDEX IF NOT EXISTS damage_assessments_district_idx ON damage_assessments (district)"),
-  ]);
-  return schemaReady;
-}
 
 export async function createDamageAssessment(record: DamageAssessmentRecord) {
   await ensureSchema();

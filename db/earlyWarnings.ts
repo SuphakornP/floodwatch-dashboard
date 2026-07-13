@@ -1,4 +1,5 @@
 import { database } from "./database";
+import { ensureSchema } from "./schema";
 
 export const alertDistricts = ["All districts", "Mae Sot", "Umphang", "Tha Song Yang", "Mae Ramat", "Phop Phra"] as const;
 export const alertLanguages = ["en", "my", "th"] as const;
@@ -38,65 +39,6 @@ export type AlertSubscriptionRecord = {
   district: AlertDistrict;
   language: AlertLanguage;
 };
-
-const schemaStatements = [
-  `CREATE TABLE IF NOT EXISTS warning_alerts (
-    id TEXT PRIMARY KEY NOT NULL,
-    status TEXT NOT NULL DEFAULT 'draft',
-    severity TEXT NOT NULL,
-    district TEXT NOT NULL,
-    title_en TEXT NOT NULL,
-    title_my TEXT NOT NULL,
-    title_th TEXT NOT NULL,
-    body_en TEXT NOT NULL,
-    body_my TEXT NOT NULL,
-    body_th TEXT NOT NULL,
-    source_name TEXT NOT NULL,
-    source_url TEXT,
-    observed_at TEXT,
-    created_at TEXT NOT NULL,
-    published_at TEXT,
-    expires_at TEXT NOT NULL,
-    created_by TEXT NOT NULL,
-    trigger_key TEXT UNIQUE,
-    auto_generated INTEGER NOT NULL DEFAULT 0
-  )`,
-  "CREATE INDEX IF NOT EXISTS warning_alerts_status_published_idx ON warning_alerts (status, published_at)",
-  "CREATE INDEX IF NOT EXISTS warning_alerts_district_expires_idx ON warning_alerts (district, expires_at)",
-  `CREATE TABLE IF NOT EXISTS alert_subscriptions (
-    id TEXT PRIMARY KEY NOT NULL,
-    endpoint TEXT NOT NULL UNIQUE,
-    p256dh TEXT NOT NULL,
-    auth TEXT NOT NULL,
-    district TEXT NOT NULL,
-    language TEXT NOT NULL,
-    active INTEGER NOT NULL DEFAULT 1,
-    consented_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL,
-    last_error TEXT
-  )`,
-  "CREATE INDEX IF NOT EXISTS alert_subscriptions_active_district_idx ON alert_subscriptions (active, district)",
-  `CREATE TABLE IF NOT EXISTS alert_deliveries (
-    id TEXT PRIMARY KEY NOT NULL,
-    alert_id TEXT NOT NULL,
-    subscription_id TEXT NOT NULL,
-    status TEXT NOT NULL,
-    attempted_at TEXT NOT NULL,
-    response_code INTEGER,
-    error TEXT
-  )`,
-  "CREATE INDEX IF NOT EXISTS alert_deliveries_alert_idx ON alert_deliveries (alert_id, attempted_at)",
-] as const;
-
-let schemaReady: Promise<unknown> | null = null;
-
-function ensureSchema() {
-  schemaReady ??= database.batch(schemaStatements.map((statement) => database.prepare(statement))).catch((error: unknown) => {
-    schemaReady = null;
-    throw error;
-  });
-  return schemaReady;
-}
 
 function mapAlert(row: Record<string, unknown>): WarningAlertRecord {
   return {
@@ -178,8 +120,9 @@ export async function createAutomatedDraft(alert: WarningAlertRecord) {
 export async function publishWarningAlert(id: string, publishedBy: string) {
   await ensureSchema();
   const publishedAt = new Date().toISOString();
-  await database.prepare("UPDATE warning_alerts SET status = 'published', published_at = ?, created_by = ? WHERE id = ? AND status = 'draft'")
+  const result = await database.prepare("UPDATE warning_alerts SET status = 'published', published_at = ?, created_by = ? WHERE id = ? AND status = 'draft'")
     .bind(publishedAt, publishedBy, id).run();
+  if (Number(result.meta.changes ?? 0) === 0) return null;
   return getWarningAlert(id);
 }
 

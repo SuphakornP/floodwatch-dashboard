@@ -9,9 +9,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "db:migrate": "node --env-file-if-exists=.env.local scripts/migrate.mjs"
   },
   "dependencies": {
+    "@libsql/client": "^0.17.4",
     "csv-parse": "^7.0.1",
     "fast-xml-parser": "^5.9.3",
     "leaflet": "^1.9.4",

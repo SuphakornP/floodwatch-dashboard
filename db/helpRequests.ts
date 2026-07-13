@@ -1,4 +1,5 @@
 import { database } from "./database";
+import { ensureSchema } from "./schema";
 
 export type HelpRequestRecord = {
   id: string;
@@ -21,42 +22,6 @@ export type HelpRequestRecord = {
   needs: string;
   details: string;
 };
-
-const createTableSql = `
-  CREATE TABLE IF NOT EXISTS help_requests (
-    id TEXT PRIMARY KEY NOT NULL,
-    reference TEXT NOT NULL UNIQUE,
-    created_at TEXT NOT NULL,
-    status TEXT NOT NULL DEFAULT 'new',
-    urgency TEXT NOT NULL,
-    full_name TEXT NOT NULL,
-    phone TEXT NOT NULL,
-    alternate_contact TEXT,
-    preferred_language TEXT NOT NULL,
-    district TEXT NOT NULL,
-    village TEXT NOT NULL,
-    location_details TEXT NOT NULL,
-    latitude TEXT,
-    longitude TEXT,
-    people_count INTEGER NOT NULL,
-    children_under_five INTEGER NOT NULL DEFAULT 0,
-    older_adults INTEGER NOT NULL DEFAULT 0,
-    disability_or_mobility_needs INTEGER NOT NULL DEFAULT 0,
-    needs TEXT NOT NULL,
-    details TEXT NOT NULL
-  )
-`;
-
-let schemaReady: Promise<unknown> | null = null;
-
-function ensureSchema() {
-  schemaReady ??= database.batch([
-    database.prepare(createTableSql),
-    database.prepare("CREATE INDEX IF NOT EXISTS help_requests_status_created_idx ON help_requests (status, created_at)"),
-    database.prepare("CREATE INDEX IF NOT EXISTS help_requests_district_idx ON help_requests (district)"),
-  ]);
-  return schemaReady;
-}
 
 export async function createHelpRequest(record: HelpRequestRecord) {
   await ensureSchema();
