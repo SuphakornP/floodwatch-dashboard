@@ -63,7 +63,9 @@ from their official sources. Raw government feeds are not copied into Turso;
 only derived warning drafts are stored.
 
 The local `data/floodwatch.sqlite` file is for development only. It is ignored
-by Git and is never used as a fallback on Vercel.
+by Git and is never used as a fallback on Vercel. It stores application records,
+not the government open-data feeds, and must never be included in a handoff
+repository. See [`data/README.md`](../data/README.md).
 
 ## Deploy in Vercel
 

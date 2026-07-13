@@ -94,8 +94,13 @@ Next.js loads `.env.local`, which is why the setup step copies the template.
 When Turso variables are blank, `npm run dev` and `npm run db:migrate` use
 `data/floodwatch.sqlite`. The migration command creates or updates its schema.
 Database-backed routes also apply and verify all registered migrations when
-first used. `data/` and `.env.local` are ignored by Git. Production mode,
-including `npm start` and Vercel, requires Turso credentials.
+first used. Generated database files and `.env.local` are ignored by Git.
+Production mode, including `npm start` and Vercel, requires Turso credentials.
+
+The local SQLite file stores application submissions and may contain personal
+information; it does not contain the government open-data feeds. Never commit
+the database, WAL, or SHM files. See [`data/README.md`](data/README.md) for the
+local-data lifecycle and reset instructions.
 
 ### Environment variables
 
