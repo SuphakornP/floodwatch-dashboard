@@ -500,7 +500,7 @@ export default function Home() {
 
   return (
     <main className="app-shell">
-      <header className="topbar">
+      <header className="topbar dashboard-topbar">
         <a className="brand" href="#overview" aria-label={`Help Without Frontiers - ${tr("Overview")}`}>
           <img className="brand-logo" src="/hwf-site-logo.png" alt="Help Without Frontiers" />
           <span>FLOODWATCH</span>

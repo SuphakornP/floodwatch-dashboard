@@ -73,6 +73,41 @@ a {
   z-index: 100;
 }
 
+.dashboard-topbar {
+  grid-template-columns: minmax(180px, 1fr) minmax(0, 1fr);
+  grid-template-rows: 64px 48px;
+  height: 112px;
+}
+
+.dashboard-topbar .brand {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.dashboard-topbar .primary-nav {
+  align-self: stretch;
+  border-top: 1px solid #edf1f2;
+  display: grid;
+  grid-column: 1 / -1;
+  grid-row: 2;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  width: 100%;
+}
+
+.dashboard-topbar .primary-nav a {
+  justify-content: center;
+  line-height: 1.25;
+  min-width: 0;
+  padding: 0 12px;
+  text-align: center;
+}
+
+.dashboard-topbar .topbar-actions {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+}
+
 .brand {
   align-items: center;
   display: inline-flex;
@@ -3610,7 +3645,7 @@ html[lang="th"] .mobile-nav a {
     grid-template-columns: 1fr auto;
   }
 
-  .primary-nav {
+  .dashboard-topbar .system-state {
     display: none;
   }
 
@@ -3659,6 +3694,15 @@ html[lang="th"] .mobile-nav a {
 }
 
 @media (max-width: 860px) {
+  .dashboard-topbar {
+    grid-template-rows: 1fr;
+    height: 66px;
+  }
+
+  .dashboard-topbar .primary-nav {
+    display: none;
+  }
+
   .page-content {
     padding: 20px 18px 90px;
   }
@@ -3763,6 +3807,10 @@ html[lang="th"] .mobile-nav a {
   .topbar {
     height: 58px;
     padding: 0 14px;
+  }
+
+  .dashboard-topbar {
+    height: 58px;
   }
 
   .brand-logo {
